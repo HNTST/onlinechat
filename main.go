@@ -6,7 +6,10 @@ import (
 	"net/http"
 	"sync"
 
+	sv "discord/database"
+
 	"github.com/gorilla/websocket"
+	"github.com/joho/godotenv"
 )
 
 var upgrader = websocket.Upgrader{
@@ -58,6 +61,17 @@ func broadcast(msg []byte) {
 }
 
 func main() {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Println("Предупреждение: .env не найден, используем системные переменные")
+	}
+	serv := &sv.Service{}
+	err = serv.InitDB()
+	if err != nil {
+		log.Printf("Ошибка подлючения к базе данных: %v", err)
+		return
+	}
+
 	http.HandleFunc("/ws", handleConnections)
 
 	fmt.Println("Сервер запущен на :8080/ws")

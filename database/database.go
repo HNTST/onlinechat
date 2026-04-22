@@ -9,6 +9,10 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type DBRepo interface {
+	InitDB() error
+}
+
 type Service struct {
 	db *sql.DB
 }
@@ -49,7 +53,7 @@ func (sv *Service) InitDB() error {
 	if _, err = db.Exec(Users); err != nil {
 		return err
 	}
-	if _, err = db.Exec(History_messages); err != nil {
+	if _, err = db.Exec(Chat_history); err != nil {
 		return err
 	}
 
