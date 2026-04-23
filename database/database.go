@@ -3,11 +3,13 @@ package database
 import (
 	"database/sql"
 	md "discord/models"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"time"
 
+	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 )
 
@@ -82,12 +84,22 @@ func (sv *Service) InitDB() error {
 func (sv *Service) GetUser(id int64) (md.User, error) {
 	var user md.User
 	err := sv.db.QueryRow("select username, reg from users where id = $1", id).Scan(&user.Name, &user.Reg)
-	return user, err
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return user, fmt.Errorf("пользователь с id %d не найден", id)
+		}
+		// Если произошла какая-то другая ошибка (проблемы с БД, сетью и т.д.)
+		return user, err
+	}
+	return user, nil
 }
 func (sv *Service) GetUserID(username string) (int64, error) {
 	var id int64
 	err := sv.db.QueryRow("select id from users where username = $1", username).Scan(&id)
-	return id, err
+	if err != nil {
+		return id, err
+	}
+	return id, nil
 }
 func (sv *Service) GetUserChats(user_id int64) ([]md.Chat, error) {
 	var result []md.Chat
@@ -137,6 +149,12 @@ func (sv *Service) SaveUser(username, password string) (int64, error) {
 	err := sv.db.QueryRow("insert into users (username, password,reg) values($1,$2,$3) RETURNING id",
 		username, user.Password, user.Reg).Scan(&user.Id)
 	if err != nil {
+		// Приводим ошибку к типу *pq.Error
+		if pgErr, ok := err.(*pq.Error); ok {
+			if pgErr.Code == "23505" {
+				return 0, fmt.Errorf("пользователь с таким именем уже существует")
+			}
+		}
 		return 0, err
 	}
 	return user.Id, nil
