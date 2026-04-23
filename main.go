@@ -30,6 +30,7 @@ func main() {
 	mux.HandleFunc("POST /user", serv.SaveUser())
 	mux.HandleFunc("GET /user", serv.GetUser())
 	mux.HandleFunc("GET /chats", serv.GetUserChats())
+	mux.HandleFunc("GET /messages", serv.GetUserMessages())
 
 	handlerWithCORS := enableCORS(mux)
 

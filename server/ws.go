@@ -12,16 +12,12 @@ import (
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		return true // Разрешаем подключения со всех источников (для тестов в Postman)
+		return true
 	},
 }
 
-// Хранилище для всех активных соединений
-// Используем Mutex, так как несколько горутин будут одновременно читать/писать в карту
-
 func (sv *Server) HandleConnections() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// 1. "Апгрейд" соединения
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			log.Println(err)
@@ -55,7 +51,6 @@ func (sv *Server) HandleConnections() http.HandlerFunc {
 					log.Println("Ошибка парсинга сообщения:", err)
 					return
 				}
-				// 2. Сохраняем (sv.repo у нас уже есть внутри сервера)
 				if err := sv.repo.SaveMessage(m); err != nil {
 					log.Println("Ошибка сохранения сообщения:", err)
 				}
@@ -63,13 +58,13 @@ func (sv *Server) HandleConnections() http.HandlerFunc {
 		}
 	}
 }
+
 func (sv *Server) Broadcast(msg []byte) {
 	sv.clientsMu.Lock()
 	defer sv.clientsMu.Unlock()
 
 	for client := range sv.clients {
-		response := fmt.Sprintf("Ты прислан мне [%s] и в нем количество байт = [%d]", string(msg), len(msg))
-		err := client.WriteMessage(websocket.TextMessage, []byte(response))
+		err := client.WriteMessage(websocket.TextMessage, msg)
 		if err != nil {
 			client.Close()
 			delete(sv.clients, client)
