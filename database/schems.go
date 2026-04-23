@@ -1,18 +1,31 @@
 package database
 
 var Users = `
-CREATE TABLE if not exists users (
+CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
-    user_name VARCHAR(255) UNIQUE NOT NULL,
+    username VARCHAR(255) UNIQUE NOT NULL, -- Наше Name из структуры
     password VARCHAR(255) NOT NULL,
-    last_online TIMESTAMP WITH TIME ZONE
+    reg TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 `
-var Chat_history = `
-CREATE TABLE if not exists chat_history (
+var Chat = `
+CREATE TABLE IF NOT EXISTS chats (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL,
-    user_id_second INTEGER NOT NULL,
-    message VARCHAR(50)
+    name VARCHAR(255) NOT NULL -- Название комнаты или группы
+);
+`
+var Chat_members = `
+CREATE TABLE if not exists chat_members (
+    chat_id INTEGER REFERENCES chats(id),
+    user_id INTEGER REFERENCES users(id),
+    PRIMARY KEY (chat_id, user_id) -- Пара должна быть уникальной
+);`
+
+var Messages = `
+CREATE TABLE IF NOT EXISTS messages (
+    id SERIAL PRIMARY KEY,
+    chat_id INTEGER REFERENCES chats(id) ON DELETE CASCADE, -- Твой ChatID (лучше INTEGER для связи)
+    sender_id INTEGER REFERENCES users(id),                  -- Твой Sender_ID
+    message TEXT NOT NULL                                   -- Твое Message
 );
 `
