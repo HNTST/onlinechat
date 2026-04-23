@@ -182,7 +182,7 @@ func (sv *Server) GetUserMessages() http.HandlerFunc {
 			return
 		}
 		messages, err = sv.repo.GetChatMessages(int64(input.ChatId))
-		if err != nil
+		if err != nil {
 			http.Error(w, `{"error": "Ошибка получения истории"}`, http.StatusInternalServerError)
 			fmt.Println("Ошибка сохранения в базу данных: ", err)
 			return
