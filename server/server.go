@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -114,17 +115,20 @@ func (sv *Server) GetUser() http.HandlerFunc {
 			err  error
 			user md.User
 		)
-		var input struct {
-			ID int64 `json:"user_id"`
+		user_idParam := r.URL.Query().Get("user_id")
+		if user_idParam == "" {
+			http.Error(w, `{"error": "Отсутствует параметр user_id"}`, http.StatusBadRequest)
+			fmt.Println("Ошибка: user_id не указан в запросе")
+			return
 		}
-		err = json.NewDecoder(r.Body).Decode(&input)
+		user_id, err := strconv.Atoi(user_idParam)
 		if err != nil {
-			http.Error(w, `{"error": "Некорректный ID"}`, http.StatusBadRequest)
-			fmt.Println("Ошибка декодирования джон запроса: ", err)
+			http.Error(w, `{"error": "Ошибка конвертации параметра"}`, http.StatusBadRequest)
+			fmt.Println("Ошибка конвертации параметра")
 			return
 		}
 
-		user, err = sv.repo.GetUser(input.ID)
+		user, err = sv.repo.GetUser(int64(user_id))
 		if err != nil {
 			http.Error(w, `{"error": "Пользователь не найден"}`, http.StatusNotFound) // 404
 			fmt.Println("Ошибка сохранения в базу данных: ", err)
@@ -145,16 +149,19 @@ func (sv *Server) GetUserChats() http.HandlerFunc {
 			err   error
 			chats []md.Chat
 		)
-		var input struct {
-			UserID int `json:"user_id"`
-		}
-		err = json.NewDecoder(r.Body).Decode(&input)
-		if err != nil {
-			http.Error(w, `{"error": "Некорректный UserID"}`, http.StatusBadRequest)
-			fmt.Println("Ошибка декодирования джон запроса: ", err)
+		user_idParam := r.URL.Query().Get("user_id")
+		if user_idParam == "" {
+			http.Error(w, `{"error": "Отсутствует параметр user_id"}`, http.StatusBadRequest)
+			fmt.Println("Ошибка: user_id не указан в запросе")
 			return
 		}
-		chats, err = sv.repo.GetUserChats(int64(input.UserID))
+		user_id, err := strconv.Atoi(user_idParam)
+		if err != nil {
+			http.Error(w, `{"error": "Ошибка конвертации параметра"}`, http.StatusBadRequest)
+			fmt.Println("Ошибка конвертации параметра")
+			return
+		}
+		chats, err = sv.repo.GetUserChats(int64(user_id))
 		if err != nil {
 			http.Error(w, `{"error": "Ошибка получения чатов"}`, http.StatusInternalServerError)
 			fmt.Println("Ошибка сохранения в базу данных: ", err)
@@ -175,16 +182,20 @@ func (sv *Server) GetUserMessages() http.HandlerFunc {
 			err      error
 			messages []md.Messages
 		)
-		var input struct {
-			ChatId int `json:"chat_id"`
-		}
-		err = json.NewDecoder(r.Body).Decode(&input)
-		if err != nil {
-			http.Error(w, `{"error": "Некорректный ChatID"}`, http.StatusBadRequest)
-			fmt.Println("Ошибка декодирования джон запроса: ", err)
+		chat_idParam := r.URL.Query().Get("chat_id")
+		if chat_idParam == "" {
+			http.Error(w, `{"error": "Отсутствует параметр chat_id"}`, http.StatusBadRequest)
+			fmt.Println("Ошибка: chat_id не указан в запросе")
 			return
 		}
-		messages, err = sv.repo.GetChatMessages(int64(input.ChatId))
+		chat_id, err := strconv.Atoi(chat_idParam)
+		if err != nil {
+			http.Error(w, `{"error": "Ошибка конвертации параметра"}`, http.StatusBadRequest)
+			fmt.Println("Ошибка конвертации параметра")
+			return
+		}
+
+		messages, err = sv.repo.GetChatMessages(int64(chat_id))
 		if err != nil {
 			http.Error(w, `{"error": "Ошибка получения истории"}`, http.StatusInternalServerError)
 			fmt.Println("Ошибка сохранения в базу данных: ", err)
@@ -206,13 +217,12 @@ func (sv *Server) GetUserID() http.HandlerFunc {
 			id  int64
 		)
 		username := r.URL.Query().Get("username")
-
-		// 2. Проверяем, что параметр вообще передали
 		if username == "" {
 			http.Error(w, `{"error": "Отсутствует параметр username"}`, http.StatusBadRequest)
 			fmt.Println("Ошибка: username не указан в запросе")
 			return
 		}
+
 		id, err = sv.repo.GetUserID(username)
 		if err != nil {
 			http.Error(w, `{"error": "Пользователь не найден"}`, http.StatusNotFound) // 404
