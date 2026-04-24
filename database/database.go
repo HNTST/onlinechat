@@ -82,6 +82,9 @@ func (sv *Service) InitDB() error {
 	if _, err = db.Exec(Messages); err != nil {
 		return err
 	}
+	if err = sv.PrepareSQL(); err != nil {
+		return err
+	}
 	fmt.Println("Успешное подключение к базе данных!")
 	return nil
 }
@@ -111,6 +114,14 @@ func (sv *Service) PrepareSQL() error {
 }
 
 // --- получение
+func (sv *Service) GetUserID(username string) (int64, error) {
+	var id int64
+	err := sv.Stmt[GET_USER_ID].QueryRow(username).Scan(&id)
+	if err != nil {
+		return id, err
+	}
+	return id, nil
+}
 func (sv *Service) GetUser(id int64) (md.User, error) {
 	var user md.User
 	err := sv.Stmt[GET_USER].QueryRow(id).Scan(&user.Name, &user.Reg)
@@ -122,14 +133,7 @@ func (sv *Service) GetUser(id int64) (md.User, error) {
 	}
 	return user, nil
 }
-func (sv *Service) GetUserID(username string) (int64, error) {
-	var id int64
-	err := sv.Stmt[GET_USER_ID].QueryRow(username).Scan(&id)
-	if err != nil {
-		return id, err
-	}
-	return id, nil
-}
+
 func (sv *Service) GetUserChats(user_id int64) ([]md.Chat, error) {
 	var result []md.Chat
 	rows, err := sv.db.Query(`

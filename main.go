@@ -29,6 +29,8 @@ func main() {
 	mux.HandleFunc("/ws", serv.HandleConnections())
 	mux.HandleFunc("POST /chat", serv.SaveChat())
 	mux.HandleFunc("POST /user", serv.SaveUser())
+
+	mux.HandleFunc("GET /user_id", serv.GetUserID())
 	mux.HandleFunc("GET /user", serv.GetUser())
 	mux.HandleFunc("GET /chats", serv.GetUserChats())
 	mux.HandleFunc("GET /messages", serv.GetUserMessages())

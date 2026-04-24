@@ -16,6 +16,7 @@ type serverRepo interface {
 	SaveChat() http.HandlerFunc
 
 	GetUser() http.HandlerFunc
+	GetUserID() http.HandlerFunc
 	GetUserChats() http.HandlerFunc
 	GetUserMessages() http.HandlerFunc
 
@@ -107,7 +108,7 @@ func (sv *Server) GetUser() http.HandlerFunc {
 			user md.User
 		)
 		var input struct {
-			ID int `json:"user_id"`
+			ID int64 `json:"user_id"`
 		}
 		err = json.NewDecoder(r.Body).Decode(&input)
 		if err != nil {
@@ -116,7 +117,7 @@ func (sv *Server) GetUser() http.HandlerFunc {
 			return
 		}
 
-		user, err = sv.repo.GetUser(int64(input.ID))
+		user, err = sv.repo.GetUser(input.ID)
 		if err != nil {
 			http.Error(w, `{"error": "Пользователь не найден"}`, http.StatusNotFound) // 404
 			fmt.Println("Ошибка сохранения в базу данных: ", err)
@@ -184,6 +185,36 @@ func (sv *Server) GetUserMessages() http.HandlerFunc {
 		}
 		w.WriteHeader(http.StatusOK) // 200
 		err = json.NewEncoder(w).Encode(messages)
+		if err != nil {
+			fmt.Println("Ошибка кодирования джон ответа: ", err)
+			return
+		}
+	}
+}
+func (sv *Server) GetUserID() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		var (
+			err error
+			id  int64
+		)
+		var input struct {
+			Username string `json:"username"`
+		}
+		err = json.NewDecoder(r.Body).Decode(&input)
+		if err != nil {
+			http.Error(w, `{"error": "Некорректный ID"}`, http.StatusBadRequest)
+			fmt.Println("Ошибка декодирования джон запроса: ", err)
+			return
+		}
+		id, err = sv.repo.GetUserID(input.Username)
+		if err != nil {
+			http.Error(w, `{"error": "Пользователь не найден"}`, http.StatusNotFound) // 404
+			fmt.Println("Ошибка получения из базы данных: ", err)
+			return
+		}
+		w.WriteHeader(http.StatusOK) // 200 — Всё Ок
+		err = json.NewEncoder(w).Encode(id)
 		if err != nil {
 			fmt.Println("Ошибка кодирования джон ответа: ", err)
 			return
