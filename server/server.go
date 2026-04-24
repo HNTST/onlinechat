@@ -82,18 +82,13 @@ func (sv *Server) SaveChat() http.HandlerFunc {
 			fmt.Println("Ошибка декодирования джон запроса: ", err)
 			return
 		}
-		id, err := sv.repo.SaveChat(input.ChatName)
+		id, err := sv.repo.SaveChatWithAuthor(input.ChatName, input.Author)
 		if err != nil {
-			http.Error(w, `{"error": "Ошибка создания чата"}`, http.StatusInternalServerError) // 500
+			http.Error(w, `{"error": "Ошибка создания чата или приязки пользователя к чату"}`, http.StatusInternalServerError) // 500
 			fmt.Println("Ошибка сохранения в базу данных: ", err)
 			return
 		}
-		err = sv.repo.SaveUserToChat(input.Author, id)
-		if err != nil {
-			http.Error(w, `{"error": "Ошибка привязки пользователя к чату"}`, http.StatusInternalServerError)
-			fmt.Println("Ошибка сохранения в базу данных: ", err)
-			return
-		}
+
 		w.WriteHeader(http.StatusCreated) // 201
 		err = json.NewEncoder(w).Encode(id)
 		if err != nil {

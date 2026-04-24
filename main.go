@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	db "discord/database"
 	sv "discord/server"
 	"fmt"
@@ -16,7 +17,7 @@ func main() {
 		log.Println("Предупреждение: .env не найден, используем системные переменные")
 	}
 
-	dbRepo := db.Service{}
+	dbRepo := db.Service{Stmt: make(map[string]*sql.Stmt)}
 	err = dbRepo.InitDB()
 	if err != nil {
 		log.Println("Ошибка подлючения к базе данных")
