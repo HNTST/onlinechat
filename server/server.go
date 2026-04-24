@@ -59,8 +59,12 @@ func (sv *Server) SaveUser() http.HandlerFunc {
 			fmt.Println("Ошибка сохранения в базу данных: ", err)
 			return
 		}
+		var resp struct {
+			Id int64 `json:"user_id"`
+		}
+		resp.Id = id
 		w.WriteHeader(http.StatusCreated) // 201 — Успешно создано
-		err = json.NewEncoder(w).Encode(id)
+		err = json.NewEncoder(w).Encode(resp)
 		if err != nil {
 			fmt.Println("Ошибка кодирования джон ответа: ", err)
 			return
@@ -89,9 +93,12 @@ func (sv *Server) SaveChat() http.HandlerFunc {
 			fmt.Println("Ошибка сохранения в базу данных: ", err)
 			return
 		}
-
+		var resp struct {
+			Id int64 `json:"chat_id"`
+		}
+		resp.Id = id
 		w.WriteHeader(http.StatusCreated) // 201
-		err = json.NewEncoder(w).Encode(id)
+		err = json.NewEncoder(w).Encode(resp)
 		if err != nil {
 			fmt.Println("Ошибка кодирования джон ответа: ", err)
 			return
@@ -213,8 +220,12 @@ func (sv *Server) GetUserID() http.HandlerFunc {
 			fmt.Println("Ошибка получения из базы данных: ", err)
 			return
 		}
+		var resp struct {
+			Id int64 `json:"user_id"`
+		}
+		resp.Id = id
 		w.WriteHeader(http.StatusOK) // 200 — Всё Ок
-		err = json.NewEncoder(w).Encode(id)
+		err = json.NewEncoder(w).Encode(resp)
 		if err != nil {
 			fmt.Println("Ошибка кодирования джон ответа: ", err)
 			return
