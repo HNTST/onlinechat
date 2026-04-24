@@ -205,16 +205,15 @@ func (sv *Server) GetUserID() http.HandlerFunc {
 			err error
 			id  int64
 		)
-		var input struct {
-			Username string `json:"username"`
-		}
-		err = json.NewDecoder(r.Body).Decode(&input)
-		if err != nil {
-			http.Error(w, `{"error": "Некорректный ID"}`, http.StatusBadRequest)
-			fmt.Println("Ошибка декодирования джон запроса: ", err)
+		username := r.URL.Query().Get("username")
+
+		// 2. Проверяем, что параметр вообще передали
+		if username == "" {
+			http.Error(w, `{"error": "Отсутствует параметр username"}`, http.StatusBadRequest)
+			fmt.Println("Ошибка: username не указан в запросе")
 			return
 		}
-		id, err = sv.repo.GetUserID(input.Username)
+		id, err = sv.repo.GetUserID(username)
 		if err != nil {
 			http.Error(w, `{"error": "Пользователь не найден"}`, http.StatusNotFound) // 404
 			fmt.Println("Ошибка получения из базы данных: ", err)
