@@ -20,6 +20,7 @@ type DBRepo interface {
 	GetUserID(username string) (int64, error)
 	GetUserChats(user_id int64) ([]md.Chat, error)
 	GetChatMessages(chat_id int64) ([]md.Messages, error)
+	GetChatMembers(chat_id int64) ([]int64, error)
 
 	SaveUser(username, password string) (int64, error)
 	SaveChatWithAuthor(name string, user_id, target_user_id int64) (int64, error)
@@ -191,6 +192,22 @@ func (sv *Service) GetChatMessages(chat_id int64) ([]md.Messages, error) {
 	}
 	return result, nil
 }
+func (sv *Service) GetChatMembers(chat_id int64) ([]int64, error) {
+	var result []int64
+	rows, err := sv.db.Query(`select user_id from chat_members where chat_id =$1`, chat_id)
+	if err != nil {
+		return result, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return result, err
+		}
+		result = append(result, id)
+	}
+	return result, nil
+}
 
 // --- сохранение
 func (sv *Service) SaveUser(username, password string) (int64, error) {
@@ -250,7 +267,6 @@ func (sv *Service) SaveChatWithAuthor(name string, user_id, target_user_id int64
 	}
 	return chat_id, nil
 }
-
 func (sv *Service) SaveMessage(message md.Messages) error {
 
 	_, err := sv.Stmt[SAVE_MESSAGE].Exec(message.ChatId, message.SenderId, message.Message)

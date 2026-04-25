@@ -23,18 +23,18 @@ type serverRepo interface {
 	GetUserMessages() http.HandlerFunc
 
 	HandleConnections() http.HandlerFunc
-	Broadcast(msg []byte)
+	ProcessMessage(msg []byte)
 }
 type Server struct {
 	repo      db.DBRepo
-	clients   map[*websocket.Conn]bool
+	clients   map[int64]*websocket.Conn
 	clientsMu sync.Mutex
 }
 
 func New(r db.DBRepo) *Server {
 	return &Server{
 		repo:      r,
-		clients:   make(map[*websocket.Conn]bool),
+		clients:   make(map[int64]*websocket.Conn),
 		clientsMu: sync.Mutex{},
 	}
 }
