@@ -133,6 +133,24 @@ func (sv *Service) GetUser(id int64) (md.User, error) {
 	}
 	return user, nil
 }
+func (sv *Service) FindExistingChat(user1, user2 int64) (int64, error) {
+	var chatID int64
+	query := `
+        SELECT chat_id
+        FROM chat_members
+        WHERE user_id IN ($1, $2)
+        GROUP BY chat_id
+        HAVING COUNT(DISTINCT user_id) = 2`
+
+	err := sv.db.QueryRow(query, user1, user2).Scan(&chatID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, nil // Чата нет, это нормально
+		}
+		return 0, err
+	}
+	return chatID, nil
+}
 func (sv *Service) GetUserChats(user_id int64) ([]md.Chat, error) {
 	var result []md.Chat
 	rows, err := sv.db.Query(`
@@ -191,6 +209,16 @@ func (sv *Service) SaveUser(username, password string) (int64, error) {
 	return user.Id, nil
 }
 func (sv *Service) SaveChatWithAuthor(name string, user_id, target_user_id int64) (int64, error) {
+	// ШАГ 0: Проверяем, а не общаются ли они уже?
+	existingID, err := sv.FindExistingChat(user_id, target_user_id)
+	if err != nil {
+		return 0, err
+	}
+	if existingID > 0 {
+		return existingID, nil // Возвращаем старый чат, не создавая новый
+	}
+
+	// Если старого чата нет — погнали создавать новый
 	tx, err := sv.db.Begin()
 	if err != nil {
 		return 0, err
@@ -202,19 +230,25 @@ func (sv *Service) SaveChatWithAuthor(name string, user_id, target_user_id int64
 	if err != nil {
 		return 0, err
 	}
+
+	// Добавляем первого
 	_, err = tx.Exec("INSERT INTO chat_members (chat_id, user_id) VALUES($1, $2)", chat_id, user_id)
 	if err != nil {
 		return 0, err
 	}
+
+	// Добавляем второго
 	_, err = tx.Exec("INSERT INTO chat_members (chat_id, user_id) VALUES($1, $2)", chat_id, target_user_id)
 	if err != nil {
 		return 0, err
 	}
+
 	if err := tx.Commit(); err != nil {
 		return 0, err
 	}
 	return chat_id, nil
 }
+
 func (sv *Service) SaveMessage(message md.Messages) error {
 
 	_, err := sv.Stmt[SAVE_MESSAGE].Exec(message.ChatId, message.SenderId, message.Message)
