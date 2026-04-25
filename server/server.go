@@ -4,6 +4,7 @@ import (
 	db "discord/database"
 	md "discord/models"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -56,6 +57,11 @@ func (sv *Server) SaveUser() http.HandlerFunc {
 		}
 		id, err := sv.repo.SaveUser(input.Username, input.Password)
 		if err != nil {
+			if errors.Is(err, db.ErrUserAlreadyExists) {
+				http.Error(w, `{"error": "Такой пользователь уже существует"}`, http.StatusConflict) // 409
+				fmt.Println("Такой пользователь уже существует: ", err)
+				return
+			}
 			http.Error(w, `{"error": "Ошибка сохранения в базу"}`, http.StatusInternalServerError) // 500
 			fmt.Println("Ошибка сохранения в базу данных: ", err)
 			return

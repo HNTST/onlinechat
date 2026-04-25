@@ -32,6 +32,8 @@ const GET_USER = "GetUser"
 const GET_USER_ID = "GetUserId"
 const SAVE_USER_TO_CHAT = "GetUserToChat"
 
+var ErrUserAlreadyExists = errors.New("пользователь с таким именем уже существует")
+
 type Service struct {
 	db   *sql.DB
 	Stmt map[string]*sql.Stmt
@@ -201,7 +203,7 @@ func (sv *Service) SaveUser(username, password string) (int64, error) {
 	if err != nil {
 		if pgErr, ok := err.(*pq.Error); ok {
 			if pgErr.Code == "23505" {
-				return 0, fmt.Errorf("пользователь с таким именем уже существует")
+				return 0, ErrUserAlreadyExists
 			}
 		}
 		return 0, err
