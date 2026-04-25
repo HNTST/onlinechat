@@ -79,8 +79,9 @@ func (sv *Server) SaveChat() http.HandlerFunc {
 			err error
 		)
 		var input struct {
-			ChatName string `json:"chat_name"`
-			Author   int64  `json:"author"`
+			ChatName   string `json:"chat_name"`
+			Author     int64  `json:"author"`
+			TargetUser int64  `json:"target_user"`
 		}
 		err = json.NewDecoder(r.Body).Decode(&input)
 		if err != nil {
@@ -88,7 +89,7 @@ func (sv *Server) SaveChat() http.HandlerFunc {
 			fmt.Println("Ошибка декодирования джон запроса: ", err)
 			return
 		}
-		id, err := sv.repo.SaveChatWithAuthor(input.ChatName, input.Author)
+		id, err := sv.repo.SaveChatWithAuthor(input.ChatName, input.Author, input.TargetUser)
 		if err != nil {
 			http.Error(w, `{"error": "Ошибка создания чата или приязки пользователя к чату"}`, http.StatusInternalServerError) // 500
 			fmt.Println("Ошибка сохранения в базу данных: ", err)

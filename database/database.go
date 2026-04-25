@@ -22,7 +22,7 @@ type DBRepo interface {
 	GetChatMessages(chat_id int64) ([]md.Messages, error)
 
 	SaveUser(username, password string) (int64, error)
-	SaveChatWithAuthor(name string, user_id int64) (int64, error)
+	SaveChatWithAuthor(name string, user_id, target_user_id int64) (int64, error)
 	SaveMessage(message md.Messages) error
 	SaveUserToChat(user_id, chat_id int64) error
 }
@@ -133,7 +133,6 @@ func (sv *Service) GetUser(id int64) (md.User, error) {
 	}
 	return user, nil
 }
-
 func (sv *Service) GetUserChats(user_id int64) ([]md.Chat, error) {
 	var result []md.Chat
 	rows, err := sv.db.Query(`
@@ -191,7 +190,7 @@ func (sv *Service) SaveUser(username, password string) (int64, error) {
 	}
 	return user.Id, nil
 }
-func (sv *Service) SaveChatWithAuthor(name string, user_id int64) (int64, error) {
+func (sv *Service) SaveChatWithAuthor(name string, user_id, target_user_id int64) (int64, error) {
 	tx, err := sv.db.Begin()
 	if err != nil {
 		return 0, err
@@ -204,6 +203,10 @@ func (sv *Service) SaveChatWithAuthor(name string, user_id int64) (int64, error)
 		return 0, err
 	}
 	_, err = tx.Exec("INSERT INTO chat_members (chat_id, user_id) VALUES($1, $2)", chat_id, user_id)
+	if err != nil {
+		return 0, err
+	}
+	_, err = tx.Exec("INSERT INTO chat_members (chat_id, user_id) VALUES($1, $2)", chat_id, target_user_id)
 	if err != nil {
 		return 0, err
 	}
