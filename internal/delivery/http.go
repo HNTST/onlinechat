@@ -1,8 +1,7 @@
-package server
+package delivery
 
 import (
-	db "discord/database"
-	md "discord/models"
+	"discord/internal/domain"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,27 +12,15 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type serverRepo interface {
-	SaveUser() http.HandlerFunc
-	SaveChat() http.HandlerFunc
-
-	GetUser() http.HandlerFunc
-	GetUserID() http.HandlerFunc
-	GetUserChats() http.HandlerFunc
-	GetUserMessages() http.HandlerFunc
-
-	HandleConnections() http.HandlerFunc
-	ProcessMessage(msg []byte)
-}
 type Server struct {
-	repo      db.DBRepo
+	service   domain.Service
 	clients   map[int64]*websocket.Conn
 	clientsMu sync.Mutex
 }
 
-func New(r db.DBRepo) *Server {
+func NewServer(s domain.Service) *Server {
 	return &Server{
-		repo:      r,
+		service:   s,
 		clients:   make(map[int64]*websocket.Conn),
 		clientsMu: sync.Mutex{},
 	}
@@ -55,9 +42,9 @@ func (sv *Server) SaveUser() http.HandlerFunc {
 			fmt.Println("Ошибка декодирования джон запроса: ", err)
 			return
 		}
-		id, err := sv.repo.SaveUser(input.Username, input.Password)
+		id, err := sv.service.SaveUser(input.Username, input.Password)
 		if err != nil {
-			if errors.Is(err, db.ErrUserAlreadyExists) {
+			if errors.Is(err, domain.ErrUserAlreadyExists) {
 				http.Error(w, `{"error": "Такой пользователь уже существует"}`, http.StatusConflict) // 409
 				fmt.Println("Такой пользователь уже существует: ", err)
 				return
@@ -95,7 +82,8 @@ func (sv *Server) SaveChat() http.HandlerFunc {
 			fmt.Println("Ошибка декодирования джон запроса: ", err)
 			return
 		}
-		id, err := sv.repo.SaveChatWithAuthor(input.ChatName, input.Author, input.TargetUser)
+
+		id, err := sv.service.SaveChat(input.ChatName, input.Author, input.TargetUser)
 		if err != nil {
 			http.Error(w, `{"error": "Ошибка создания чата или приязки пользователя к чату"}`, http.StatusInternalServerError) // 500
 			fmt.Println("Ошибка сохранения в базу данных: ", err)
@@ -120,7 +108,7 @@ func (sv *Server) GetUser() http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		var (
 			err  error
-			user md.User
+			user domain.User
 		)
 		user_idParam := r.URL.Query().Get("user_id")
 		if user_idParam == "" {
@@ -135,7 +123,7 @@ func (sv *Server) GetUser() http.HandlerFunc {
 			return
 		}
 
-		user, err = sv.repo.GetUser(int64(user_id))
+		user, err = sv.service.GetUser(int64(user_id))
 		if err != nil {
 			http.Error(w, `{"error": "Пользователь не найден"}`, http.StatusNotFound) // 404
 			fmt.Println("Ошибка сохранения в базу данных: ", err)
@@ -154,7 +142,7 @@ func (sv *Server) GetUserChats() http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		var (
 			err   error
-			chats []md.Chat
+			chats []domain.Chat
 		)
 		user_idParam := r.URL.Query().Get("user_id")
 		if user_idParam == "" {
@@ -168,7 +156,7 @@ func (sv *Server) GetUserChats() http.HandlerFunc {
 			fmt.Println("Ошибка конвертации параметра")
 			return
 		}
-		chats, err = sv.repo.GetUserChats(int64(user_id))
+		chats, err = sv.service.GetUserChats(int64(user_id))
 		if err != nil {
 			http.Error(w, `{"error": "Ошибка получения чатов"}`, http.StatusInternalServerError)
 			fmt.Println("Ошибка сохранения в базу данных: ", err)
@@ -187,7 +175,7 @@ func (sv *Server) GetUserMessages() http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		var (
 			err      error
-			messages []md.Messages
+			messages []domain.Messages
 		)
 		chat_idParam := r.URL.Query().Get("chat_id")
 		if chat_idParam == "" {
@@ -202,7 +190,7 @@ func (sv *Server) GetUserMessages() http.HandlerFunc {
 			return
 		}
 
-		messages, err = sv.repo.GetChatMessages(int64(chat_id))
+		messages, err = sv.service.GetUserMessages(int64(chat_id))
 		if err != nil {
 			http.Error(w, `{"error": "Ошибка получения истории"}`, http.StatusInternalServerError)
 			fmt.Println("Ошибка сохранения в базу данных: ", err)
@@ -230,7 +218,7 @@ func (sv *Server) GetUserID() http.HandlerFunc {
 			return
 		}
 
-		id, err = sv.repo.GetUserID(username)
+		id, err = sv.service.GetUserID(username)
 		if err != nil {
 			http.Error(w, `{"error": "Пользователь не найден"}`, http.StatusNotFound) // 404
 			fmt.Println("Ошибка получения из базы данных: ", err)

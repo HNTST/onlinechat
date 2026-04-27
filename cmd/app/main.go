@@ -1,39 +1,38 @@
 package main
 
 import (
-	"database/sql"
-	db "discord/database"
-	sv "discord/server"
+	"discord/internal/config"
+	"discord/internal/delivery"
+	"discord/internal/repository"
+	"discord/internal/service"
 	"fmt"
 	"log"
 	"net/http"
-
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Println("Предупреждение: .env не найден, используем системные переменные")
-	}
+	cfg := config.Load()
 
-	dbRepo := db.Service{Stmt: make(map[string]*sql.Stmt)}
-	err = dbRepo.InitDB()
-	if err != nil {
+	repo := repository.NewDatabse(cfg.Config_DB)
+	if err := repo.InitDB(); err != nil {
 		log.Println("Ошибка подлючения к базе данных")
 		return
 	}
+	defer repo.Close()
 
-	serv := sv.New(&dbRepo)
+	service := service.NewService(repo)
+
+	app := delivery.NewServer(service)
+
 	mux := http.NewServeMux() // Рекомендуется использовать свой Mux вместо глобального
-	mux.HandleFunc("/ws", serv.HandleConnections())
-	mux.HandleFunc("POST /chat", serv.SaveChat())
-	mux.HandleFunc("POST /user", serv.SaveUser())
+	mux.HandleFunc("/ws", app.HandleConnections())
+	mux.HandleFunc("POST /chat", app.SaveChat())
+	mux.HandleFunc("POST /user", app.SaveUser())
 
-	mux.HandleFunc("GET /user_id", serv.GetUserID())
-	mux.HandleFunc("GET /user", serv.GetUser())
-	mux.HandleFunc("GET /chats", serv.GetUserChats())
-	mux.HandleFunc("GET /messages", serv.GetUserMessages())
+	mux.HandleFunc("GET /user_id", app.GetUserID())
+	mux.HandleFunc("GET /user", app.GetUser())
+	mux.HandleFunc("GET /chats", app.GetUserChats())
+	mux.HandleFunc("GET /messages", app.GetUserMessages())
 
 	handlerWithCORS := enableCORS(mux)
 
