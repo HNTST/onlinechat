@@ -6,8 +6,7 @@ import (
 	"discord/internal/delivery"
 	"discord/internal/repository"
 	"discord/internal/service"
-	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,22 +15,25 @@ import (
 )
 
 func main() {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 	cfg := config.Load()
 
+	logger.Info("Подлючение к базе данных")
 	repo := repository.NewDatabse(cfg.Config_DB)
 	if err := repo.InitDB(); err != nil {
-		log.Println("Ошибка подлючения к базе данных")
+		logger.Error("Ошибка подлючения к базе данных", "error", err.Error())
 		return
 	}
+	logger.Info("Успешное подлючение к базе данных")
 
 	service := service.NewService(repo)
 
-	app := delivery.NewServer(service)
+	app := delivery.NewServer(logger, service)
 
-	mux := http.NewServeMux() // Рекомендуется использовать свой Mux вместо глобального
+	mux := http.NewServeMux()
 	mux.HandleFunc("/ws", app.HandleConnections())
 	mux.HandleFunc("POST /chat", app.SaveChat())
 	mux.HandleFunc("POST /user", app.SaveUser())
@@ -41,56 +43,35 @@ func main() {
 	mux.HandleFunc("GET /chats", app.GetUserChats())
 	mux.HandleFunc("GET /messages", app.GetUserMessages())
 
-	handlerWithCORS := enableCORS(mux)
+	handlerWithMVChain := app.MWChain(mux, app.CORSMV, app.LoggingMV)
 
 	server := &http.Server{
 		Addr:    ":8080",
-		Handler: handlerWithCORS,
+		Handler: handlerWithMVChain,
 	}
 
 	go func() {
-		fmt.Println("Сервер запущен на :8080/ws")
+		logger.Info("Сервер запущен на :8080/ws")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			fmt.Println("[ERROR] Init Server: ", err)
+			logger.Error("Ошибка запуска сервера", "error", err.Error())
 			return
 		}
 	}()
 	<-signalChan
-	fmt.Print("\nПолучен сигнал завершения, начинаю graceful shutdown...")
+	logger.Info("Получен сигнал завершения, начинаю graceful shutdown...")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	fmt.Print("\nЗавершение работы сервера")
+	logger.Info("Завершение работы сервера")
 	if err := server.Shutdown(ctx); err != nil {
-		fmt.Printf("Ошибка при завершении сервера: %v", err)
+		logger.Error("Ошибка при завершении сервера", "error", err.Error())
 		return
 	}
-	fmt.Println("\nЗакрытие соединения с базой данных")
+	logger.Info("Закрытие соединения с базой данных")
 	if err := repo.Close(); err != nil {
-		fmt.Printf("Ошибка при завершнии работы с базой данных: %v", err)
+		logger.Error("Ошибка при завершнии работы с базой данных", "error", err.Error())
 		return
 	}
 
-	fmt.Println("\nСервер завершил работу")
+	logger.Info("Сервер завершил работу")
 
-}
-func enableCORS(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Разрешаем запросы с любого источника (*)
-		// Для продакшена лучше указать конкретный адрес фронтенда друга
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-
-		// Разрешаем методы
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
-
-		// Разрешаем заголовки (Content-Type важен для JSON)
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-		// Если это preflight-запрос (OPTIONS), просто отвечаем 200 OK и выходим
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
 }

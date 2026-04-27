@@ -4,7 +4,7 @@ import (
 	"discord/internal/domain"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"sync"
@@ -16,13 +16,15 @@ type Server struct {
 	service   domain.Service
 	clients   map[int64]*websocket.Conn
 	clientsMu sync.Mutex
+	logger    slog.Logger
 }
 
-func NewServer(s domain.Service) *Server {
+func NewServer(logger *slog.Logger, s domain.Service) *Server {
 	return &Server{
 		service:   s,
 		clients:   make(map[int64]*websocket.Conn),
 		clientsMu: sync.Mutex{},
+		logger:    *logger,
 	}
 }
 
@@ -38,29 +40,26 @@ func (sv *Server) SaveUser() http.HandlerFunc {
 		}
 		err = json.NewDecoder(r.Body).Decode(&input)
 		if err != nil {
-			http.Error(w, `{"error": "Неверный формат JSON"}`, http.StatusBadRequest) // 400
-			fmt.Println("Ошибка декодирования джон запроса: ", err)
+			sv.sendError(w, "Неверный формат JSON", http.StatusBadRequest, err)
 			return
 		}
 		id, err := sv.service.SaveUser(input.Username, input.Password)
 		if err != nil {
 			if errors.Is(err, domain.ErrUserAlreadyExists) {
-				http.Error(w, `{"error": "Такой пользователь уже существует"}`, http.StatusConflict) // 409
-				fmt.Println("Такой пользователь уже существует: ", err)
+				sv.sendError(w, "Такой пользователь уже существует", http.StatusConflict, err)
 				return
 			}
-			http.Error(w, `{"error": "Ошибка сохранения в базу"}`, http.StatusInternalServerError) // 500
-			fmt.Println("Ошибка сохранения в базу данных: ", err)
+			sv.sendError(w, "Ошибка сохранения в базу", http.StatusInternalServerError, err)
 			return
 		}
 		var resp struct {
 			Id int64 `json:"user_id"`
 		}
 		resp.Id = id
-		w.WriteHeader(http.StatusCreated) // 201 — Успешно создано
+		w.WriteHeader(http.StatusCreated)
 		err = json.NewEncoder(w).Encode(resp)
 		if err != nil {
-			fmt.Println("Ошибка кодирования джон ответа: ", err)
+			sv.sendError(w, "Ошибка кодирования JSON", http.StatusInternalServerError, err)
 			return
 		}
 	}
@@ -78,15 +77,13 @@ func (sv *Server) SaveChat() http.HandlerFunc {
 		}
 		err = json.NewDecoder(r.Body).Decode(&input)
 		if err != nil {
-			http.Error(w, `{"error": "Неверный формат JSON"}`, http.StatusBadRequest) // 400
-			fmt.Println("Ошибка декодирования джон запроса: ", err)
+			sv.sendError(w, "Неверный формат JSON", http.StatusBadRequest, err)
 			return
 		}
 
 		id, err := sv.service.SaveChat(input.ChatName, input.Author, input.TargetUser)
 		if err != nil {
-			http.Error(w, `{"error": "Ошибка создания чата или приязки пользователя к чату"}`, http.StatusInternalServerError) // 500
-			fmt.Println("Ошибка сохранения в базу данных: ", err)
+			sv.sendError(w, "Ошибка создания чата или приязки пользователя к чату", http.StatusInternalServerError, err)
 			return
 		}
 		var resp struct {
@@ -96,7 +93,7 @@ func (sv *Server) SaveChat() http.HandlerFunc {
 		w.WriteHeader(http.StatusCreated) // 201
 		err = json.NewEncoder(w).Encode(resp)
 		if err != nil {
-			fmt.Println("Ошибка кодирования джон ответа: ", err)
+			sv.sendError(w, "Ошибка кодирования JSON ответа", http.StatusInternalServerError, err)
 			return
 		}
 	}
@@ -112,27 +109,24 @@ func (sv *Server) GetUser() http.HandlerFunc {
 		)
 		user_idParam := r.URL.Query().Get("user_id")
 		if user_idParam == "" {
-			http.Error(w, `{"error": "Отсутствует параметр user_id"}`, http.StatusBadRequest)
-			fmt.Println("Ошибка: user_id не указан в запросе")
+			sv.sendError(w, "Отсутствует параметр user_id", http.StatusBadRequest, nil)
 			return
 		}
 		user_id, err := strconv.Atoi(user_idParam)
 		if err != nil {
-			http.Error(w, `{"error": "Ошибка конвертации параметра"}`, http.StatusBadRequest)
-			fmt.Println("Ошибка конвертации параметра")
+			sv.sendError(w, "Ошибка конвертации параметра", http.StatusBadRequest, err)
 			return
 		}
 
 		user, err = sv.service.GetUser(int64(user_id))
 		if err != nil {
-			http.Error(w, `{"error": "Пользователь не найден"}`, http.StatusNotFound) // 404
-			fmt.Println("Ошибка сохранения в базу данных: ", err)
+			sv.sendError(w, "Пользователь не найден", http.StatusNotFound, err)
 			return
 		}
 		w.WriteHeader(http.StatusOK) // 200 — Всё Ок
 		err = json.NewEncoder(w).Encode(user)
 		if err != nil {
-			fmt.Println("Ошибка кодирования джон ответа: ", err)
+			sv.sendError(w, "Ошибка кодирования JSON ответа", http.StatusInternalServerError, err)
 			return
 		}
 	}
@@ -146,26 +140,23 @@ func (sv *Server) GetUserChats() http.HandlerFunc {
 		)
 		user_idParam := r.URL.Query().Get("user_id")
 		if user_idParam == "" {
-			http.Error(w, `{"error": "Отсутствует параметр user_id"}`, http.StatusBadRequest)
-			fmt.Println("Ошибка: user_id не указан в запросе")
+			sv.sendError(w, "Отсутствует параметр user_id", http.StatusBadRequest, nil)
 			return
 		}
 		user_id, err := strconv.Atoi(user_idParam)
 		if err != nil {
-			http.Error(w, `{"error": "Ошибка конвертации параметра"}`, http.StatusBadRequest)
-			fmt.Println("Ошибка конвертации параметра")
+			sv.sendError(w, "Ошибка конвертации параметра", http.StatusBadRequest, err)
 			return
 		}
 		chats, err = sv.service.GetUserChats(int64(user_id))
 		if err != nil {
-			http.Error(w, `{"error": "Ошибка получения чатов"}`, http.StatusInternalServerError)
-			fmt.Println("Ошибка сохранения в базу данных: ", err)
+			sv.sendError(w, "Ошибка получения чатов", http.StatusInternalServerError, err)
 			return
 		}
 		w.WriteHeader(http.StatusOK) // 200
 		err = json.NewEncoder(w).Encode(chats)
 		if err != nil {
-			fmt.Println("Ошибка кодирования джон ответа: ", err)
+			sv.sendError(w, "Ошибка кодирования JSON запроса", http.StatusInternalServerError, err)
 			return
 		}
 	}
@@ -179,27 +170,24 @@ func (sv *Server) GetUserMessages() http.HandlerFunc {
 		)
 		chat_idParam := r.URL.Query().Get("chat_id")
 		if chat_idParam == "" {
-			http.Error(w, `{"error": "Отсутствует параметр chat_id"}`, http.StatusBadRequest)
-			fmt.Println("Ошибка: chat_id не указан в запросе")
+			sv.sendError(w, "Отсутствует параметр chat_id", http.StatusBadRequest, nil)
 			return
 		}
 		chat_id, err := strconv.Atoi(chat_idParam)
 		if err != nil {
-			http.Error(w, `{"error": "Ошибка конвертации параметра"}`, http.StatusBadRequest)
-			fmt.Println("Ошибка конвертации параметра")
+			sv.sendError(w, "Ошибка конвертации параметра", http.StatusBadRequest, err)
 			return
 		}
 
 		messages, err = sv.service.GetUserMessages(int64(chat_id))
 		if err != nil {
-			http.Error(w, `{"error": "Ошибка получения истории"}`, http.StatusInternalServerError)
-			fmt.Println("Ошибка сохранения в базу данных: ", err)
+			sv.sendError(w, "Ошибка получения истории", http.StatusInternalServerError, err)
 			return
 		}
 		w.WriteHeader(http.StatusOK) // 200
 		err = json.NewEncoder(w).Encode(messages)
 		if err != nil {
-			fmt.Println("Ошибка кодирования джон ответа: ", err)
+			sv.sendError(w, "Ошибка кодирования JSON ответа", http.StatusInternalServerError, err)
 			return
 		}
 	}
@@ -213,15 +201,13 @@ func (sv *Server) GetUserID() http.HandlerFunc {
 		)
 		username := r.URL.Query().Get("username")
 		if username == "" {
-			http.Error(w, `{"error": "Отсутствует параметр username"}`, http.StatusBadRequest)
-			fmt.Println("Ошибка: username не указан в запросе")
+			sv.sendError(w, "Отсутствует параметр username", http.StatusBadRequest, nil)
 			return
 		}
 
 		id, err = sv.service.GetUserID(username)
 		if err != nil {
-			http.Error(w, `{"error": "Пользователь не найден"}`, http.StatusNotFound) // 404
-			fmt.Println("Ошибка получения из базы данных: ", err)
+			sv.sendError(w, "Пользователь не найден", http.StatusNotFound, err)
 			return
 		}
 		var resp struct {
@@ -231,7 +217,7 @@ func (sv *Server) GetUserID() http.HandlerFunc {
 		w.WriteHeader(http.StatusOK) // 200 — Всё Ок
 		err = json.NewEncoder(w).Encode(resp)
 		if err != nil {
-			fmt.Println("Ошибка кодирования джон ответа: ", err)
+			sv.sendError(w, "Ошибка кодирования JSON ответа", http.StatusInternalServerError, err)
 			return
 		}
 	}

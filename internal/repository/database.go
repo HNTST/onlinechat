@@ -64,7 +64,6 @@ func (sv *Database) InitDB() error {
 	if err = sv.PrepareSQL(); err != nil {
 		return err
 	}
-	fmt.Println("Успешное подключение к базе данных!")
 	return nil
 }
 func (sv *Database) Close() error {
