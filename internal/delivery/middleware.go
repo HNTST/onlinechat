@@ -70,7 +70,7 @@ func (sv *Server) LoggingMV(next http.Handler) http.Handler {
 
 		duration := time.Since(start)
 		args := []any{
-			"methoed", r.Method,
+			"method", r.Method,
 			"path", r.URL.Path,
 			"status", wrapped.statusCode,
 			"duration", duration.String(),
