@@ -126,7 +126,7 @@ func (sv *Database) FindExistingChat(user1, user2 int64) (int64, error) {
 	err := sv.db.QueryRow(query, user1, user2).Scan(&chatID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return 0, nil // Чата нет, это нормально
+			return 0, nil
 		}
 		return 0, err
 	}

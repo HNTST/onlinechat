@@ -16,6 +16,7 @@ func (rw *responseWriter) WriteHeader(code int) {
 	rw.statusCode = code
 	rw.ResponseWriter.WriteHeader(code)
 }
+
 func (rw *responseWriter) setError(err error) {
 	if err != nil {
 		rw.errDetail = err.Error()
@@ -30,6 +31,7 @@ func (sv *Server) sendError(w http.ResponseWriter, msg string, code int, err err
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(map[string]string{"error": msg})
 }
+
 func (sv *Server) MWChain(next http.Handler, middlewares ...func(http.Handler) http.Handler) http.Handler {
 	for i := len(middlewares) - 1; i >= 0; i-- {
 		next = middlewares[i](next)

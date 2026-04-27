@@ -40,16 +40,16 @@ func (sv *Server) SaveUser() http.HandlerFunc {
 		}
 		err = json.NewDecoder(r.Body).Decode(&input)
 		if err != nil {
-			sv.sendError(w, "Неверный формат JSON", http.StatusBadRequest, err)
+			sv.sendError(w, domain.ErrInvalidJSON.Error(), http.StatusBadRequest, err)
 			return
 		}
 		id, err := sv.service.SaveUser(input.Username, input.Password)
 		if err != nil {
 			if errors.Is(err, domain.ErrUserAlreadyExists) {
-				sv.sendError(w, "Такой пользователь уже существует", http.StatusConflict, err)
+				sv.sendError(w, domain.ErrUserAlreadyExists.Error(), http.StatusConflict, err)
 				return
 			}
-			sv.sendError(w, "Ошибка сохранения в базу", http.StatusInternalServerError, err)
+			sv.sendError(w, domain.ErrInternal.Error(), http.StatusInternalServerError, err)
 			return
 		}
 		var resp struct {
@@ -59,7 +59,7 @@ func (sv *Server) SaveUser() http.HandlerFunc {
 		w.WriteHeader(http.StatusCreated)
 		err = json.NewEncoder(w).Encode(resp)
 		if err != nil {
-			sv.sendError(w, "Ошибка кодирования JSON", http.StatusInternalServerError, err)
+			sv.sendError(w, domain.ErrEncodingRequest.Error(), http.StatusInternalServerError, err)
 			return
 		}
 	}
@@ -77,13 +77,13 @@ func (sv *Server) SaveChat() http.HandlerFunc {
 		}
 		err = json.NewDecoder(r.Body).Decode(&input)
 		if err != nil {
-			sv.sendError(w, "Неверный формат JSON", http.StatusBadRequest, err)
+			sv.sendError(w, domain.ErrInvalidJSON.Error(), http.StatusBadRequest, err)
 			return
 		}
 
 		id, err := sv.service.SaveChat(input.ChatName, input.Author, input.TargetUser)
 		if err != nil {
-			sv.sendError(w, "Ошибка создания чата или приязки пользователя к чату", http.StatusInternalServerError, err)
+			sv.sendError(w, domain.ErrInternal.Error(), http.StatusInternalServerError, err)
 			return
 		}
 		var resp struct {
@@ -93,7 +93,7 @@ func (sv *Server) SaveChat() http.HandlerFunc {
 		w.WriteHeader(http.StatusCreated) // 201
 		err = json.NewEncoder(w).Encode(resp)
 		if err != nil {
-			sv.sendError(w, "Ошибка кодирования JSON ответа", http.StatusInternalServerError, err)
+			sv.sendError(w, domain.ErrEncodingRequest.Error(), http.StatusInternalServerError, err)
 			return
 		}
 	}
@@ -109,24 +109,24 @@ func (sv *Server) GetUser() http.HandlerFunc {
 		)
 		user_idParam := r.URL.Query().Get("user_id")
 		if user_idParam == "" {
-			sv.sendError(w, "Отсутствует параметр user_id", http.StatusBadRequest, nil)
+			sv.sendError(w, domain.ErrParamMissing.Error(), http.StatusBadRequest, nil)
 			return
 		}
 		user_id, err := strconv.Atoi(user_idParam)
 		if err != nil {
-			sv.sendError(w, "Ошибка конвертации параметра", http.StatusBadRequest, err)
+			sv.sendError(w, domain.ErrParamMissing.Error(), http.StatusBadRequest, err)
 			return
 		}
 
 		user, err = sv.service.GetUser(int64(user_id))
 		if err != nil {
-			sv.sendError(w, "Пользователь не найден", http.StatusNotFound, err)
+			sv.sendError(w, domain.ErrUserNotFound.Error(), http.StatusNotFound, err)
 			return
 		}
 		w.WriteHeader(http.StatusOK) // 200 — Всё Ок
 		err = json.NewEncoder(w).Encode(user)
 		if err != nil {
-			sv.sendError(w, "Ошибка кодирования JSON ответа", http.StatusInternalServerError, err)
+			sv.sendError(w, domain.ErrEncodingRequest.Error(), http.StatusInternalServerError, err)
 			return
 		}
 	}
@@ -140,23 +140,23 @@ func (sv *Server) GetUserChats() http.HandlerFunc {
 		)
 		user_idParam := r.URL.Query().Get("user_id")
 		if user_idParam == "" {
-			sv.sendError(w, "Отсутствует параметр user_id", http.StatusBadRequest, nil)
+			sv.sendError(w, domain.ErrParamMissing.Error(), http.StatusBadRequest, nil)
 			return
 		}
 		user_id, err := strconv.Atoi(user_idParam)
 		if err != nil {
-			sv.sendError(w, "Ошибка конвертации параметра", http.StatusBadRequest, err)
+			sv.sendError(w, domain.ErrParamMissing.Error(), http.StatusBadRequest, err)
 			return
 		}
 		chats, err = sv.service.GetUserChats(int64(user_id))
 		if err != nil {
-			sv.sendError(w, "Ошибка получения чатов", http.StatusInternalServerError, err)
+			sv.sendError(w, domain.ErrInternal.Error(), http.StatusInternalServerError, err)
 			return
 		}
 		w.WriteHeader(http.StatusOK) // 200
 		err = json.NewEncoder(w).Encode(chats)
 		if err != nil {
-			sv.sendError(w, "Ошибка кодирования JSON запроса", http.StatusInternalServerError, err)
+			sv.sendError(w, domain.ErrEncodingRequest.Error(), http.StatusInternalServerError, err)
 			return
 		}
 	}
@@ -170,24 +170,24 @@ func (sv *Server) GetUserMessages() http.HandlerFunc {
 		)
 		chat_idParam := r.URL.Query().Get("chat_id")
 		if chat_idParam == "" {
-			sv.sendError(w, "Отсутствует параметр chat_id", http.StatusBadRequest, nil)
+			sv.sendError(w, domain.ErrParamMissing.Error(), http.StatusBadRequest, nil)
 			return
 		}
 		chat_id, err := strconv.Atoi(chat_idParam)
 		if err != nil {
-			sv.sendError(w, "Ошибка конвертации параметра", http.StatusBadRequest, err)
+			sv.sendError(w, domain.ErrParamMissing.Error(), http.StatusBadRequest, err)
 			return
 		}
 
 		messages, err = sv.service.GetUserMessages(int64(chat_id))
 		if err != nil {
-			sv.sendError(w, "Ошибка получения истории", http.StatusInternalServerError, err)
+			sv.sendError(w, domain.ErrInternal.Error(), http.StatusInternalServerError, err)
 			return
 		}
 		w.WriteHeader(http.StatusOK) // 200
 		err = json.NewEncoder(w).Encode(messages)
 		if err != nil {
-			sv.sendError(w, "Ошибка кодирования JSON ответа", http.StatusInternalServerError, err)
+			sv.sendError(w, domain.ErrEncodingRequest.Error(), http.StatusInternalServerError, err)
 			return
 		}
 	}
@@ -201,13 +201,13 @@ func (sv *Server) GetUserID() http.HandlerFunc {
 		)
 		username := r.URL.Query().Get("username")
 		if username == "" {
-			sv.sendError(w, "Отсутствует параметр username", http.StatusBadRequest, nil)
+			sv.sendError(w, domain.ErrParamMissing.Error(), http.StatusBadRequest, nil)
 			return
 		}
 
 		id, err = sv.service.GetUserID(username)
 		if err != nil {
-			sv.sendError(w, "Пользователь не найден", http.StatusNotFound, err)
+			sv.sendError(w, domain.ErrUserNotFound.Error(), http.StatusNotFound, err)
 			return
 		}
 		var resp struct {
@@ -217,7 +217,7 @@ func (sv *Server) GetUserID() http.HandlerFunc {
 		w.WriteHeader(http.StatusOK) // 200 — Всё Ок
 		err = json.NewEncoder(w).Encode(resp)
 		if err != nil {
-			sv.sendError(w, "Ошибка кодирования JSON ответа", http.StatusInternalServerError, err)
+			sv.sendError(w, domain.ErrEncodingRequest.Error(), http.StatusInternalServerError, err)
 			return
 		}
 	}
