@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"discord/internal/config"
 	"discord/internal/delivery"
 	"discord/internal/repository"
@@ -8,9 +9,16 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 func main() {
+
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 	cfg := config.Load()
 
 	repo := repository.NewDatabse(cfg.Config_DB)
@@ -18,7 +26,6 @@ func main() {
 		log.Println("Ошибка подлючения к базе данных")
 		return
 	}
-	defer repo.Close()
 
 	service := service.NewService(repo)
 
@@ -36,13 +43,35 @@ func main() {
 
 	handlerWithCORS := enableCORS(mux)
 
-	fmt.Println("Сервер запущен на :8080/ws")
 	server := &http.Server{
 		Addr:    ":8080",
 		Handler: handlerWithCORS,
 	}
 
-	log.Fatal(server.ListenAndServe())
+	go func() {
+		fmt.Println("Сервер запущен на :8080/ws")
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			fmt.Println("[ERROR] Init Server: ", err)
+			return
+		}
+	}()
+	<-signalChan
+	fmt.Print("\nПолучен сигнал завершения, начинаю graceful shutdown...")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	fmt.Print("\nЗавершение работы сервера")
+	if err := server.Shutdown(ctx); err != nil {
+		fmt.Printf("Ошибка при завершении сервера: %v", err)
+		return
+	}
+	fmt.Println("\nЗакрытие соединения с базой данных")
+	if err := repo.Close(); err != nil {
+		fmt.Printf("Ошибка при завершнии работы с базой данных: %v", err)
+		return
+	}
+
+	fmt.Println("\nСервер завершил работу")
+
 }
 func enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

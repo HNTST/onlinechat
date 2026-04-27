@@ -67,8 +67,8 @@ func (sv *Database) InitDB() error {
 	fmt.Println("Успешное подключение к базе данных!")
 	return nil
 }
-func (sv *Database) Close() {
-	sv.db.Close()
+func (sv *Database) Close() error {
+	return sv.db.Close()
 }
 func (sv *Database) PrepareSQL() error {
 	pattern := func(methodName, query string) error {
