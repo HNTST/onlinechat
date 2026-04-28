@@ -1,9 +1,9 @@
 package delivery
 
 import (
-	"discord/internal/domain"
 	md "discord/internal/domain"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -22,7 +22,7 @@ func (sv *Server) HandleConnections() http.HandlerFunc {
 		uidStr := r.URL.Query().Get("user_id")
 		userID, err := strconv.Atoi(uidStr)
 		if err != nil {
-			sv.sendError(w, domain.ErrParamMissing.Error(), http.StatusBadRequest, nil)
+			log.Println("Ошибка: не указан или неверен user_id")
 			return
 		}
 		user_id := int64(userID)
@@ -38,7 +38,7 @@ func (sv *Server) HandleConnections() http.HandlerFunc {
 		sv.clients[user_id] = conn
 		sv.clientsMu.Unlock()
 
-		sv.logger.Info("Пользователь подлючился", "user_id", userID)
+		fmt.Printf("Пользователь %d подключился!\n", userID)
 		for {
 			_, msg, err := conn.ReadMessage()
 			if err != nil {
