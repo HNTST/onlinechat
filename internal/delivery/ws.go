@@ -85,7 +85,8 @@ func (sv *Server) ProcessMessage(data []byte, actualSenderID int64) {
 	sv.clientsMu.Lock()
 	for _, id := range membersIDs {
 		if clientConn, ok := sv.clients[id]; ok {
-			err := clientConn.WriteMessage(websocket.TextMessage, data)
+			err := clientConn.WriteJSON(m)
+			// err := clientConn.WriteMessage(websocket.TextMessage, data)
 			if err != nil {
 				log.Printf("Ошибка отправки юзеру %d: %v", id, err)
 				clientConn.Close()
