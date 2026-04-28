@@ -1,11 +1,12 @@
 package delivery
 
 import (
-	md "discord/internal/domain"
+	"discord/internal/domain"
 	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -52,14 +53,25 @@ func (sv *Server) HandleConnections() http.HandlerFunc {
 }
 
 func (sv *Server) ProcessMessage(data []byte, actualSenderID int64) {
-	var m md.Messages
-	if err := json.Unmarshal(data, &m); err != nil {
+	var input struct {
+		Message   string `json:"message"`
+		Chat_id   int64  `json:"chat_id"`
+		Sender_id int64  `json:"sender_id"`
+	}
+
+	if err := json.Unmarshal(data, &input); err != nil {
 		log.Println("Ошибка парсинга:", err)
 		return
 	}
-	if m.SenderId != actualSenderID {
-		log.Printf("Внимание! Юзер %d пытается выдать себя за %d", actualSenderID, m.SenderId)
+	if input.Sender_id != actualSenderID {
+		log.Printf("Внимание! Юзер %d пытается выдать себя за %d", actualSenderID, input.Sender_id)
 		return
+	}
+	m := domain.Messages{
+		Message:  input.Message,
+		SenderId: input.Sender_id,
+		ChatId:   input.Chat_id,
+		Sent_at:  time.Now(),
 	}
 	if err := sv.service.SaveMessage(m); err != nil {
 		log.Println("Ошибка БД:", err)

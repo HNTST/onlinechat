@@ -27,10 +27,11 @@ type Chat struct {
 }
 
 type Messages struct {
-	Id       int64  `json:"id"`
-	ChatId   int64  `json:"chat_id"`
-	SenderId int64  `json:"sender_id"`
-	Message  string `json:"message"`
+	Id       int64     `json:"id"`
+	ChatId   int64     `json:"chat_id"`
+	SenderId int64     `json:"sender_id"`
+	Message  string    `json:"message"`
+	Sent_at  time.Time `json:"message"`
 }
 
 type Repository interface {

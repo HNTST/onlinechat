@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"time"
 )
 
 type responseWriter struct {
@@ -34,6 +33,7 @@ func (sv *Server) sendError(w http.ResponseWriter, msg string, code int, err err
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(map[string]string{"error": msg})
 }
+
 func (rw *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	h, ok := rw.ResponseWriter.(http.Hijacker)
 	if !ok {
@@ -41,6 +41,7 @@ func (rw *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	}
 	return h.Hijack()
 }
+
 func (sv *Server) MWChain(next http.Handler, middlewares ...func(http.Handler) http.Handler) http.Handler {
 	for i := len(middlewares) - 1; i >= 0; i-- {
 		next = middlewares[i](next)
@@ -71,19 +72,17 @@ func (sv *Server) CORSMV(next http.Handler) http.Handler {
 }
 func (sv *Server) LoggingMV(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
+		// start := time.Now()
 
 		wrapped := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 
 		next.ServeHTTP(wrapped, r)
 
-		duration := time.Since(start)
+		// duration := time.Since(start)
 		args := []any{
 			"method", r.Method,
 			"path", r.URL.Path,
 			"status", wrapped.statusCode,
-			"duration", duration.String(),
-			"ip", r.RemoteAddr,
 		}
 		if wrapped.errDetail != "" {
 			args = append(args, "err_detail", wrapped.errDetail)

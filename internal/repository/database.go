@@ -8,6 +8,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres" // Драйвер для PostgreSQL
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 )
@@ -49,18 +52,41 @@ func (sv *Database) InitDB() error {
 	}
 
 	// создание таблиц
-	if _, err = db.Exec(Users); err != nil {
+	// if _, err = db.Exec(Users); err != nil {
+	// 	return err
+	// }
+	// if _, err = db.Exec(Chat); err != nil {
+	// 	return err
+	// }
+	// if _, err = db.Exec(Chat_members); err != nil {
+	// 	return err
+	// }
+	// if _, err = db.Exec(Messages); err != nil {
+	// 	return err
+	// }
+
+	// МИГРАЦИИ
+	migrationConnStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		sv.cfg.User,
+		sv.cfg.Password,
+		sv.cfg.Host,
+		sv.cfg.Port,
+		sv.cfg.Name,
+		sv.cfg.Sslmode,
+	)
+	m, err := migrate.New(
+		"file://migrations",
+		migrationConnStr,
+	)
+
+	if err != nil {
 		return err
 	}
-	if _, err = db.Exec(Chat); err != nil {
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		return err
 	}
-	if _, err = db.Exec(Chat_members); err != nil {
-		return err
-	}
-	if _, err = db.Exec(Messages); err != nil {
-		return err
-	}
+
 	if err = sv.PrepareSQL(); err != nil {
 		return err
 	}
@@ -79,7 +105,7 @@ func (sv *Database) PrepareSQL() error {
 		return nil
 	}
 
-	if err := pattern(SAVE_MESSAGE, "insert into messages (chat_id, sender_id, message) values($1, $2,$3)"); err != nil {
+	if err := pattern(SAVE_MESSAGE, "insert into messages (chat_id, sender_id, message, sent_at) values($1, $2,$3, $4)"); err != nil {
 		return err
 	}
 	if err := pattern(GET_USER, "select username, reg from users where id = $1"); err != nil {
@@ -155,7 +181,7 @@ func (sv *Database) GetUserChats(user_id int64) ([]domain.Chat, error) {
 }
 func (sv *Database) GetChatMessages(chat_id int64) ([]domain.Messages, error) {
 	var result []domain.Messages
-	rows, err := sv.db.Query(`select sender_id, message from messages where chat_id =$1 ORDER BY id ASC`, chat_id)
+	rows, err := sv.db.Query(`select sender_id, message, sent_at from messages where chat_id =$1 ORDER BY id ASC`, chat_id)
 	if err != nil {
 		return result, err
 	}
@@ -163,7 +189,7 @@ func (sv *Database) GetChatMessages(chat_id int64) ([]domain.Messages, error) {
 
 	for rows.Next() {
 		var m domain.Messages
-		if err := rows.Scan(&m.SenderId, &m.Message); err != nil {
+		if err := rows.Scan(&m.SenderId, &m.Message, &m.Sent_at); err != nil {
 			return result, err
 		}
 		result = append(result, m)
@@ -247,7 +273,7 @@ func (sv *Database) SaveChatWithAuthor(name string, user_id, target_user_id int6
 }
 func (sv *Database) SaveMessage(message domain.Messages) error {
 
-	_, err := sv.Stmt[SAVE_MESSAGE].Exec(message.ChatId, message.SenderId, message.Message)
+	_, err := sv.Stmt[SAVE_MESSAGE].Exec(message.ChatId, message.SenderId, message.Message, message.Sent_at)
 	if err != nil {
 		return err
 	}
