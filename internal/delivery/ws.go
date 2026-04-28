@@ -1,7 +1,7 @@
-package server
+package delivery
 
 import (
-	md "discord/models"
+	md "discord/internal/domain"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -62,11 +62,11 @@ func (sv *Server) ProcessMessage(data []byte, actualSenderID int64) {
 		log.Printf("Внимание! Юзер %d пытается выдать себя за %d", actualSenderID, m.SenderId)
 		return
 	}
-	if err := sv.repo.SaveMessage(m); err != nil {
+	if err := sv.service.SaveMessage(m); err != nil {
 		log.Println("Ошибка БД:", err)
 	}
 
-	membersIDs, err := sv.repo.GetChatMembers(m.ChatId)
+	membersIDs, err := sv.service.GetChatMembers(m.ChatId)
 	if err != nil {
 		log.Println("Ошибка получения участников:", err)
 		return

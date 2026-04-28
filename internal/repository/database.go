@@ -1,32 +1,16 @@
-package database
+package repository
 
 import (
 	"database/sql"
-	md "discord/models"
+	"discord/internal/config"
+	"discord/internal/domain"
 	"errors"
 	"fmt"
-	"log"
-	"os"
 	"time"
 
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 )
-
-type DBRepo interface {
-	InitDB() error
-
-	GetUser(id int64) (md.User, error)
-	GetUserID(username string) (int64, error)
-	GetUserChats(user_id int64) ([]md.Chat, error)
-	GetChatMessages(chat_id int64) ([]md.Messages, error)
-	GetChatMembers(chat_id int64) ([]int64, error)
-
-	SaveUser(username, password string) (int64, error)
-	SaveChatWithAuthor(name string, user_id, target_user_id int64) (int64, error)
-	SaveMessage(message md.Messages) error
-	SaveUserToChat(user_id, chat_id int64) error
-}
 
 const SAVE_MESSAGE = "SaveMessage"
 const GET_USER = "GetUser"
@@ -35,28 +19,20 @@ const SAVE_USER_TO_CHAT = "GetUserToChat"
 
 var ErrUserAlreadyExists = errors.New("пользователь с таким именем уже существует")
 
-type Service struct {
+type Database struct {
+	cfg  config.Config_DB
 	db   *sql.DB
 	Stmt map[string]*sql.Stmt
 }
 
-func getEnv(key, fallback string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	log.Printf("%s не найден, использую дефолт: %s", key, fallback)
-	return fallback
+func NewDatabse(cfg config.Config_DB) *Database {
+	return &Database{cfg: cfg,
+		Stmt: make(map[string]*sql.Stmt)}
 }
-
-func (sv *Service) InitDB() error {
+func (sv *Database) InitDB() error {
 
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		getEnv("DB_HOST", "192.168.31.234"),
-		getEnv("DB_PORT", "5432"),
-		getEnv("DB_USER", "discord_user"),
-		getEnv("DB_PASSWORD", "password"),
-		getEnv("DB_NAME", "discord"),
-		getEnv("SSLMODE", "disable"),
+		sv.cfg.Host, sv.cfg.Port, sv.cfg.User, sv.cfg.Password, sv.cfg.Name, sv.cfg.Sslmode,
 	)
 
 	// 2. Открываем соединение
@@ -88,10 +64,12 @@ func (sv *Service) InitDB() error {
 	if err = sv.PrepareSQL(); err != nil {
 		return err
 	}
-	fmt.Println("Успешное подключение к базе данных!")
 	return nil
 }
-func (sv *Service) PrepareSQL() error {
+func (sv *Database) Close() error {
+	return sv.db.Close()
+}
+func (sv *Database) PrepareSQL() error {
 	pattern := func(methodName, query string) error {
 		stmt, err := sv.db.Prepare(query)
 		if err != nil {
@@ -117,7 +95,7 @@ func (sv *Service) PrepareSQL() error {
 }
 
 // --- получение
-func (sv *Service) GetUserID(username string) (int64, error) {
+func (sv *Database) GetUserID(username string) (int64, error) {
 	var id int64
 	err := sv.Stmt[GET_USER_ID].QueryRow(username).Scan(&id)
 	if err != nil {
@@ -125,8 +103,8 @@ func (sv *Service) GetUserID(username string) (int64, error) {
 	}
 	return id, nil
 }
-func (sv *Service) GetUser(id int64) (md.User, error) {
-	var user md.User
+func (sv *Database) GetUser(id int64) (domain.User, error) {
+	var user domain.User
 	err := sv.Stmt[GET_USER].QueryRow(id).Scan(&user.Name, &user.Reg)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -136,7 +114,7 @@ func (sv *Service) GetUser(id int64) (md.User, error) {
 	}
 	return user, nil
 }
-func (sv *Service) FindExistingChat(user1, user2 int64) (int64, error) {
+func (sv *Database) FindExistingChat(user1, user2 int64) (int64, error) {
 	var chatID int64
 	query := `
         SELECT chat_id
@@ -148,14 +126,14 @@ func (sv *Service) FindExistingChat(user1, user2 int64) (int64, error) {
 	err := sv.db.QueryRow(query, user1, user2).Scan(&chatID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return 0, nil // Чата нет, это нормально
+			return 0, nil
 		}
 		return 0, err
 	}
 	return chatID, nil
 }
-func (sv *Service) GetUserChats(user_id int64) ([]md.Chat, error) {
-	var result []md.Chat
+func (sv *Database) GetUserChats(user_id int64) ([]domain.Chat, error) {
+	var result []domain.Chat
 	rows, err := sv.db.Query(`
 		SELECT c.id, c.name
 		FROM chats c
@@ -167,7 +145,7 @@ func (sv *Service) GetUserChats(user_id int64) ([]md.Chat, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var c md.Chat
+		var c domain.Chat
 		if err := rows.Scan(&c.Id, &c.Name); err != nil {
 			return result, err
 		}
@@ -175,8 +153,8 @@ func (sv *Service) GetUserChats(user_id int64) ([]md.Chat, error) {
 	}
 	return result, nil
 }
-func (sv *Service) GetChatMessages(chat_id int64) ([]md.Messages, error) {
-	var result []md.Messages
+func (sv *Database) GetChatMessages(chat_id int64) ([]domain.Messages, error) {
+	var result []domain.Messages
 	rows, err := sv.db.Query(`select sender_id, message from messages where chat_id =$1 ORDER BY id ASC`, chat_id)
 	if err != nil {
 		return result, err
@@ -184,7 +162,7 @@ func (sv *Service) GetChatMessages(chat_id int64) ([]md.Messages, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var m md.Messages
+		var m domain.Messages
 		if err := rows.Scan(&m.SenderId, &m.Message); err != nil {
 			return result, err
 		}
@@ -192,7 +170,7 @@ func (sv *Service) GetChatMessages(chat_id int64) ([]md.Messages, error) {
 	}
 	return result, nil
 }
-func (sv *Service) GetChatMembers(chat_id int64) ([]int64, error) {
+func (sv *Database) GetChatMembers(chat_id int64) ([]int64, error) {
 	var result []int64
 	rows, err := sv.db.Query(`select user_id from chat_members where chat_id =$1`, chat_id)
 	if err != nil {
@@ -210,8 +188,8 @@ func (sv *Service) GetChatMembers(chat_id int64) ([]int64, error) {
 }
 
 // --- сохранение
-func (sv *Service) SaveUser(username, password string) (int64, error) {
-	user := md.User{
+func (sv *Database) SaveUser(username, password string) (int64, error) {
+	user := domain.User{
 		Password: password,
 		Reg:      time.Now(),
 	}
@@ -220,14 +198,14 @@ func (sv *Service) SaveUser(username, password string) (int64, error) {
 	if err != nil {
 		if pgErr, ok := err.(*pq.Error); ok {
 			if pgErr.Code == "23505" {
-				return 0, ErrUserAlreadyExists
+				return 0, domain.ErrUserAlreadyExists
 			}
 		}
 		return 0, err
 	}
 	return user.Id, nil
 }
-func (sv *Service) SaveChatWithAuthor(name string, user_id, target_user_id int64) (int64, error) {
+func (sv *Database) SaveChatWithAuthor(name string, user_id, target_user_id int64) (int64, error) {
 	// ШАГ 0: Проверяем, а не общаются ли они уже?
 	existingID, err := sv.FindExistingChat(user_id, target_user_id)
 	if err != nil {
@@ -267,7 +245,7 @@ func (sv *Service) SaveChatWithAuthor(name string, user_id, target_user_id int64
 	}
 	return chat_id, nil
 }
-func (sv *Service) SaveMessage(message md.Messages) error {
+func (sv *Database) SaveMessage(message domain.Messages) error {
 
 	_, err := sv.Stmt[SAVE_MESSAGE].Exec(message.ChatId, message.SenderId, message.Message)
 	if err != nil {
@@ -275,7 +253,7 @@ func (sv *Service) SaveMessage(message md.Messages) error {
 	}
 	return nil
 }
-func (sv *Service) SaveUserToChat(user_id, chat_id int64) error {
+func (sv *Database) SaveUserToChat(user_id, chat_id int64) error {
 	_, err := sv.Stmt[SAVE_USER_TO_CHAT].Exec(chat_id, user_id)
 	if err != nil {
 		return err
