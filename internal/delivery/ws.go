@@ -71,7 +71,7 @@ func (sv *Server) ProcessMessage(data []byte, actualSenderID int64) {
 		Message:  input.Message,
 		SenderId: input.Sender_id,
 		ChatId:   input.Chat_id,
-		Sent_at:  time.Now(),
+		Sent_at:  time.Now().UTC(),
 	}
 	if err := sv.service.SaveMessage(m); err != nil {
 		log.Println("Ошибка БД:", err)
