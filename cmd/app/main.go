@@ -15,7 +15,8 @@ import (
 )
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	// logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
@@ -51,7 +52,7 @@ func main() {
 	}
 
 	go func() {
-		logger.Info("Сервер запущен на :8080/ws")
+		logger.Info("Сервер запущен")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Error("Ошибка запуска сервера", "error", err.Error())
 			return

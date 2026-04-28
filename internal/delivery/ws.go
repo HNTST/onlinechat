@@ -3,7 +3,6 @@ package delivery
 import (
 	md "discord/internal/domain"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -38,7 +37,7 @@ func (sv *Server) HandleConnections() http.HandlerFunc {
 		sv.clients[user_id] = conn
 		sv.clientsMu.Unlock()
 
-		fmt.Printf("Пользователь %d подключился!\n", userID)
+		log.Printf("Пользователь %d подключился!\n", userID)
 		for {
 			_, msg, err := conn.ReadMessage()
 			if err != nil {
