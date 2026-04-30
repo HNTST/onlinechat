@@ -1,9 +1,10 @@
-package repository
+package postgres
 
 import (
 	"database/sql"
 	"discord/internal/config"
 	"discord/internal/domain"
+	"discord/internal/errrors"
 	"errors"
 	"fmt"
 	"time"
@@ -19,8 +20,6 @@ const SAVE_MESSAGE = "SaveMessage"
 const GET_USER = "GetUser"
 const GET_USER_ID = "GetUserId"
 const SAVE_USER_TO_CHAT = "GetUserToChat"
-
-var ErrUserAlreadyExists = errors.New("пользователь с таким именем уже существует")
 
 type Database struct {
 	cfg  config.Config_DB
@@ -224,7 +223,7 @@ func (sv *Database) SaveUser(username, password string) (int64, error) {
 	if err != nil {
 		if pgErr, ok := err.(*pq.Error); ok {
 			if pgErr.Code == "23505" {
-				return 0, domain.ErrUserAlreadyExists
+				return 0, errrors.ErrUserAlreadyExists
 			}
 		}
 		return 0, err
@@ -285,4 +284,27 @@ func (sv *Database) SaveUserToChat(user_id, chat_id int64) error {
 		return err
 	}
 	return err
+}
+func (sv *Database) UpdateUserAvatarPath(user_id, size int64, file_key, orig_file_name, type_file string) (int64, error) {
+
+	tx, err := sv.db.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	var file_id int64
+	err = tx.QueryRow("insert into files (file_key, original_file_name, type_file, size_file) values ($1,$2,$3,$4) RETURNING ID",
+		file_key, orig_file_name, type_file, size).Scan(&file_id)
+	if err != nil {
+		return 0, err
+	}
+	_, err = tx.Exec("update users set avatar_id = $1 where id = $2", file_id, user_id)
+	if err != nil {
+		return 0, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return file_id, nil
 }

@@ -1,2 +1,2 @@
 ALTER TABLE messages
-DROP COLUMN created_at;
+DROP COLUMN sent_at;

@@ -4,7 +4,8 @@ import (
 	"context"
 	"discord/internal/config"
 	"discord/internal/delivery"
-	"discord/internal/repository"
+	"discord/internal/repository/minio"
+	"discord/internal/repository/postgres"
 	"discord/internal/service"
 	"log/slog"
 	"net/http"
@@ -22,15 +23,22 @@ func main() {
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 	cfg := config.Load()
 
-	logger.Info("Подлючение к базе данных")
-	repo := repository.NewDatabse(cfg.Config_DB)
+	logger.Info("Подлючение к базе данных posgres")
+	repo := postgres.NewDatabse(cfg.Config_DB)
 	if err := repo.InitDB(); err != nil {
 		logger.Error("Ошибка подлючения к базе данных", "error", err.Error())
 		return
 	}
-	logger.Info("Успешное подлючение к базе данных")
+	logger.Info("Успешное подлючение к базе  postges")
 
-	service := service.NewService(repo)
+	logger.Info("Подлючение к базе данных minio")
+	mn := minio.NewMinio(cfg.Config_Minio)
+	if err := mn.InitMinio(); err != nil {
+		logger.Error("Ошибка подлючения к базе данных", "error", err.Error())
+		return
+	}
+	logger.Info("Успешное подлючение к базе minio")
+	service := service.NewService(repo, mn)
 
 	app := delivery.NewServer(logger, service)
 
@@ -38,6 +46,7 @@ func main() {
 	mux.HandleFunc("/ws", app.HandleConnections())
 	mux.HandleFunc("POST /chat", app.SaveChat())
 	mux.HandleFunc("POST /user", app.SaveUser())
+	mux.HandleFunc("POST /user/avatar", app.UpdateUserAvatar())
 
 	mux.HandleFunc("GET /user_id", app.GetUserID())
 	mux.HandleFunc("GET /user", app.GetUser())

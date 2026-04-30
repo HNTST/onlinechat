@@ -1,38 +1,9 @@
 package domain
 
 import (
-	"errors"
-	"time"
+	"context"
+	"io"
 )
-
-var (
-	ErrUserAlreadyExists = errors.New("Пользователь уже существует")
-	ErrInternal          = errors.New("Внутренняя ошибка сервера")
-	ErrInvalidJSON       = errors.New("Неверный формат JSON")
-	ErrUserNotFound      = errors.New("Пользователь не найден")
-	ErrParamMissing      = errors.New("Отсутствует обязательный параметр")
-	ErrEncodingRequest   = errors.New("Ошибка кодирования JSON ответа")
-)
-
-type User struct {
-	Id       int64     `json:"id"`
-	Name     string    `json:"username"`
-	Password string    `json:"password"`
-	Reg      time.Time `json:"reg"`
-}
-
-type Chat struct {
-	Id   int64  `json:"id"`
-	Name string `json:"name"`
-}
-
-type Messages struct {
-	Id       int64     `json:"id"`
-	ChatId   int64     `json:"chat_id"`
-	SenderId int64     `json:"sender_id"`
-	Message  string    `json:"message"`
-	Sent_at  time.Time `json:"sent_at"`
-}
 
 type Repository interface {
 	InitDB() error
@@ -47,6 +18,8 @@ type Repository interface {
 	SaveChatWithAuthor(name string, user_id, target_user_id int64) (int64, error)
 	SaveMessage(message Messages) error
 	SaveUserToChat(user_id, chat_id int64) error
+
+	UpdateUserAvatarPath(user_id, size int64, file_key, orig_file_name, type_file string) (int64, error)
 }
 
 type Service interface {
@@ -58,4 +31,10 @@ type Service interface {
 	GetUserID(username string) (int64, error)
 	GetChatMembers(chat_id int64) ([]int64, error)
 	SaveMessage(message Messages) error
+
+	UploadUserAvatar(ctx context.Context, user_id int64, file io.Reader, orig_file_name string, size int64, content_type string) (int64, error)
+}
+
+type Storage interface {
+	UploadFile(ctx context.Context, file_name, content_type string, reader io.Reader, size int64) (string, error)
 }

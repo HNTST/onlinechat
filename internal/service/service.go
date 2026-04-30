@@ -1,16 +1,21 @@
 package service
 
 import (
+	"context"
 	dm "discord/internal/domain"
+	"fmt"
+	"io"
 )
 
 type Service struct {
-	db dm.Repository
+	db      dm.Repository
+	storage dm.Storage
 }
 
-func NewService(db dm.Repository) *Service {
+func NewService(db dm.Repository, storage dm.Storage) *Service {
 	return &Service{
-		db: db,
+		db:      db,
+		storage: storage,
 	}
 }
 func (sv *Service) SaveUser(username, password string) (int64, error) {
@@ -37,4 +42,19 @@ func (sv *Service) GetChatMembers(chat_id int64) ([]int64, error) {
 }
 func (sv *Service) SaveMessage(message dm.Messages) error {
 	return sv.db.SaveMessage(message)
+}
+
+func (sv *Service) UploadUserAvatar(ctx context.Context, user_id int64, file io.Reader, orig_file_name string, size int64, content_type string) (int64, error) {
+
+	file_name := fmt.Sprintf("avatars/user_%d", user_id)
+
+	key, err := sv.storage.UploadFile(ctx, file_name, content_type, file, size)
+	if err != nil {
+		return 0, fmt.Errorf("failed to upload to minio: %w", err)
+	}
+	file_id, err := sv.db.UpdateUserAvatarPath(user_id, size, key, orig_file_name, content_type)
+	if err != nil {
+		return 0, fmt.Errorf("failed to update avatar path in db: %w", err)
+	}
+	return file_id, nil
 }
