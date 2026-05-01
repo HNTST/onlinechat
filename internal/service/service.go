@@ -2,22 +2,23 @@ package service
 
 import (
 	"context"
-	dm "discord/internal/domain"
+	"discord/internal/core/domain"
 	"fmt"
 	"io"
 )
 
 type Service struct {
-	db      dm.Repository
-	storage dm.Storage
+	db      domain.Repository
+	storage domain.Storage
 }
 
-func NewService(db dm.Repository, storage dm.Storage) *Service {
+func NewService(db domain.Repository, storage domain.Storage) *Service {
 	return &Service{
 		db:      db,
 		storage: storage,
 	}
 }
+
 func (sv *Service) SaveUser(username, password string) (int64, error) {
 	return sv.db.SaveUser(username, password)
 }
@@ -25,13 +26,13 @@ func (sv *Service) SaveChat(chat_name string, user_id, target_user_id int64) (in
 	return sv.db.SaveChatWithAuthor(chat_name, user_id, target_user_id)
 }
 
-func (sv *Service) GetUser(user_id int64) (dm.User, error) {
+func (sv *Service) GetUser(user_id int64) (domain.User, error) {
 	return sv.db.GetUser(user_id)
 }
-func (sv *Service) GetUserChats(user_id int64) ([]dm.Chat, error) {
+func (sv *Service) GetUserChats(user_id int64) ([]domain.Chat, error) {
 	return sv.db.GetUserChats(user_id)
 }
-func (sv *Service) GetUserMessages(chat_id int64) ([]dm.Messages, error) {
+func (sv *Service) GetUserMessages(chat_id int64) ([]domain.Messages, error) {
 	return sv.db.GetChatMessages(chat_id)
 }
 func (sv *Service) GetUserID(username string) (int64, error) {
@@ -40,7 +41,7 @@ func (sv *Service) GetUserID(username string) (int64, error) {
 func (sv *Service) GetChatMembers(chat_id int64) ([]int64, error) {
 	return sv.db.GetChatMembers(chat_id)
 }
-func (sv *Service) SaveMessage(message dm.Messages) error {
+func (sv *Service) SaveMessage(message domain.Messages) error {
 	return sv.db.SaveMessage(message)
 }
 

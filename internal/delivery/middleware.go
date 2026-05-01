@@ -24,8 +24,7 @@ func (rw *responseWriter) setError(err error) {
 		rw.errDetail = err.Error()
 	}
 }
-func (sv *Server) sendError(w http.ResponseWriter, msg string, code int, err error) {
-	// Пытаемся достучаться до нашей обертки
+func (sv *OLD_SERVER_HANDLERS) sendError(w http.ResponseWriter, msg string, code int, err error) {
 	if rw, ok := w.(*responseWriter); ok {
 		rw.setError(err)
 	}
@@ -42,14 +41,14 @@ func (rw *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return h.Hijack()
 }
 
-func (sv *Server) MWChain(next http.Handler, middlewares ...func(http.Handler) http.Handler) http.Handler {
+func (sv *OLD_SERVER_HANDLERS) MWChain(next http.Handler, middlewares ...func(http.Handler) http.Handler) http.Handler {
 	for i := len(middlewares) - 1; i >= 0; i-- {
 		next = middlewares[i](next)
 	}
 	return next
 }
 
-func (sv *Server) CORSMV(next http.Handler) http.Handler {
+func (sv *OLD_SERVER_HANDLERS) CORSMV(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Разрешаем запросы с любого источника (*)
 		// Для продакшена лучше указать конкретный адрес фронтенда друга
@@ -70,7 +69,7 @@ func (sv *Server) CORSMV(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
-func (sv *Server) LoggingMV(next http.Handler) http.Handler {
+func (sv *OLD_SERVER_HANDLERS) LoggingMV(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// start := time.Now()
 

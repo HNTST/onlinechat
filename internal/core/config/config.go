@@ -1,8 +1,9 @@
-package config
+package core_config
 
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -10,6 +11,8 @@ import (
 type Config struct {
 	Config_DB
 	Config_Minio
+	Config_Logger
+	Config_Server
 }
 type Config_DB struct {
 	Host     string
@@ -27,6 +30,13 @@ type Config_Minio struct {
 	RootPassword string
 	Sslmode      string
 }
+type Config_Logger struct {
+	LogLevel string
+}
+type Config_Server struct {
+	Addr            string
+	ShutdownTimeout time.Duration
+}
 
 func getEnv(key, fallback string) string {
 	if value := os.Getenv(key); value != "" {
@@ -37,7 +47,7 @@ func getEnv(key, fallback string) string {
 }
 
 func Load() *Config {
-	godotenv.Load("internal/config/.env")
+	godotenv.Load("internal/core/config/.env")
 	return &Config{
 		Config_DB{
 			Host:     getEnv("DB_HOST", "192.168.31.234"),
@@ -52,6 +62,13 @@ func Load() *Config {
 			BucketName:   getEnv("MINIO_BUCKET_NAME", "onlinechat"),
 			RootUser:     getEnv("MINIO_ROOT_USER", "admin"),
 			RootPassword: getEnv("MINIO_ROOT_PASSWORD", "password123"),
+		},
+		Config_Logger{
+			LogLevel: getEnv("LOGGER_LEVEL", "INFO"),
+		},
+		Config_Server{
+			Addr:            getEnv("HTTP_ADDR", "localhost:8080"),
+			ShutdownTimeout: 60,
 		},
 	}
 }

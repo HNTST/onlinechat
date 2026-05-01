@@ -2,7 +2,7 @@ package minio
 
 import (
 	"context"
-	"discord/internal/config"
+	config "discord/internal/core/config"
 	"io"
 
 	"github.com/minio/minio-go/v7"

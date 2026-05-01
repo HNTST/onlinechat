@@ -1,7 +1,7 @@
 package delivery
 
 import (
-	"discord/internal/domain"
+	"discord/internal/core/domain"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -17,7 +17,7 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func (sv *Server) HandleConnections() http.HandlerFunc {
+func (sv *OLD_SERVER_HANDLERS) HandleConnections() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		uidStr := r.URL.Query().Get("user_id")
 		userID, err := strconv.Atoi(uidStr)
@@ -52,7 +52,7 @@ func (sv *Server) HandleConnections() http.HandlerFunc {
 	}
 }
 
-func (sv *Server) ProcessMessage(data []byte, actualSenderID int64) {
+func (sv *OLD_SERVER_HANDLERS) ProcessMessage(data []byte, actualSenderID int64) {
 	var input struct {
 		Message   string `json:"message"`
 		Chat_id   int64  `json:"chat_id"`

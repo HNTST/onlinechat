@@ -2,9 +2,9 @@ package postgres
 
 import (
 	"database/sql"
-	"discord/internal/config"
-	"discord/internal/domain"
-	"discord/internal/errrors"
+	config "discord/internal/core/config"
+	"discord/internal/core/domain"
+	core_errors "discord/internal/core/errors"
 	"errors"
 	"fmt"
 	"time"
@@ -223,7 +223,7 @@ func (sv *Database) SaveUser(username, password string) (int64, error) {
 	if err != nil {
 		if pgErr, ok := err.(*pq.Error); ok {
 			if pgErr.Code == "23505" {
-				return 0, errrors.ErrUserAlreadyExists
+				return 0, core_errors.ErrUserAlreadyExists
 			}
 		}
 		return 0, err
