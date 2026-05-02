@@ -1,6 +1,11 @@
 package core_http_response
 
-import "net/http"
+import (
+	"bufio"
+	"fmt"
+	"net"
+	"net/http"
+)
 
 var StatusCodeUnninitialized = -1
 
@@ -25,4 +30,12 @@ func (rw *ResponseWriter) GetStatusCodeOrPanic() int {
 		panic("no status code set")
 	}
 	return rw.statusCode
+}
+
+func (rw *ResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	h, ok := rw.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, fmt.Errorf("ResponseWriter does not implement http.Hijacker")
+	}
+	return h.Hijack()
 }
