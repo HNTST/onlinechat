@@ -69,6 +69,11 @@ func (h *OLD_SERVER_HANDLERS) Routes() []core_http_server.Route {
 			Path:    "/ws",
 			Handler: h.HandleConnections,
 		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/chats/add_user",
+			Handler: h.AddUserToChat,
+		},
 	}
 }
 
@@ -180,6 +185,26 @@ func (sv *OLD_SERVER_HANDLERS) UpdateUserAvatar(w http.ResponseWriter, r *http.R
 		sv.sendError(w, core_errors.ErrEncodingRequest.Error(), http.StatusInternalServerError, err)
 		return
 	}
+}
+
+func (sv *OLD_SERVER_HANDLERS) AddUserToChat(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var input struct {
+		Chat_id     int64 `json:"chat_id"`
+		Target_user int64 `json:"target_user_id"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		sv.sendError(w, core_errors.ErrInvalidJSON.Error(), http.StatusBadRequest, err)
+		return
+	}
+	err = sv.service.AddUserToChat(input.Chat_id, input.Target_user)
+	if err != nil {
+		sv.sendError(w, core_errors.ErrInternal.Error(), http.StatusInternalServerError, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK) // 200 — Всё Ок
 }
 
 // --- GET

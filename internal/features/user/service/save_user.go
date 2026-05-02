@@ -1,4 +1,4 @@
-package user_service
+package users_service
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-func (s *UsersService) CreateUser(ctx context.Context, user domain.User) (domain.User, error) {
+func (s *UsersService) SaveUser(ctx context.Context, user domain.User) (domain.User, error) {
 	if err := user.Validate(); err != nil {
 		return domain.User{}, fmt.Errorf("ошибка валидации домена пользователя: %w", err)
 	}

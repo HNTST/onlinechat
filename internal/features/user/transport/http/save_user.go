@@ -19,7 +19,7 @@ type SaveUserResponse struct {
 	Reg  time.Time `json:"reg"`
 }
 
-func (h *UsersHTTPHandler) SaveUser() (rw http.ResponseWriter, r *http.Request) {
+func (h *UsersHTTPHandler) SaveUser(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, rw)
@@ -31,7 +31,7 @@ func (h *UsersHTTPHandler) SaveUser() (rw http.ResponseWriter, r *http.Request) 
 	}
 
 	userDomain := domainFromDTO(request)
-	userDomain, err := h.usersService.CreateUser(ctx, userDomain)
+	userDomain, err := h.usersService.SaveUser(ctx, userDomain)
 	if err != nil {
 		responseHandler.ErrorResponse(err, "failed to create user")
 		return
@@ -39,7 +39,6 @@ func (h *UsersHTTPHandler) SaveUser() (rw http.ResponseWriter, r *http.Request) 
 	response := dtoFromDomain(userDomain)
 
 	responseHandler.JSONResponse(response, http.StatusCreated)
-	return
 }
 
 func domainFromDTO(dto SaveUserRequest) domain.User {

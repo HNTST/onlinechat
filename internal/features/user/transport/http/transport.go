@@ -3,17 +3,27 @@ package users_transport_http
 import (
 	"context"
 	"discord/internal/core/domain"
+	core_http_server "discord/internal/core/transport/server"
+	"net/http"
 )
 
 type UsersHTTPHandler struct {
 	usersService UsersService
 }
 type UsersService interface {
-	CreateUser(ctx context.Context, user domain.User) (domain.User, error)
+	SaveUser(ctx context.Context, user domain.User) (domain.User, error)
 }
 
 func NewUsersHTTPHandler(usersService UsersService) *UsersHTTPHandler {
 	return &UsersHTTPHandler{
 		usersService: usersService,
+	}
+}
+func (h *UsersHTTPHandler) Routes() []core_http_server.Route {
+	return []core_http_server.Route{
+		{Method: http.MethodPost,
+			Path:    "/user",
+			Handler: h.SaveUser,
+		},
 	}
 }

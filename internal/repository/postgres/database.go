@@ -279,11 +279,11 @@ func (sv *Database) SaveMessage(message domain.Messages) error {
 	return nil
 }
 func (sv *Database) SaveUserToChat(user_id, chat_id int64) error {
-	_, err := sv.Stmt[SAVE_USER_TO_CHAT].Exec(chat_id, user_id)
+	_, err := sv.db.Exec("insert into chat_members (chat_id, user_id) values($1,$2)", chat_id, user_id)
 	if err != nil {
 		return err
 	}
-	return err
+	return nil
 }
 func (sv *Database) UpdateUserAvatarPath(user_id, size int64, file_key, orig_file_name, type_file string) (int64, error) {
 

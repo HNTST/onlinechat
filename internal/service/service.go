@@ -59,3 +59,6 @@ func (sv *Service) UploadUserAvatar(ctx context.Context, user_id int64, file io.
 	}
 	return file_id, nil
 }
+func (sv *Service) AddUserToChat(chat_id, target_user_id int64) error {
+	return sv.db.SaveUserToChat(target_user_id, chat_id)
+}
