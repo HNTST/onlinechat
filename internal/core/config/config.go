@@ -21,6 +21,7 @@ type Config_DB struct {
 	Password string
 	Name     string
 	Sslmode  string
+	Timeout  time.Duration
 }
 
 type Config_Minio struct {
@@ -55,7 +56,8 @@ func Load() *Config {
 			User:     getEnv("DB_USER", "discord_user"),
 			Password: getEnv("DB_PASSWORD", "password"),
 			Name:     getEnv("DB_NAME", "discord"),
-			Sslmode:  getEnv("SSLMODE", "disable"),
+			Sslmode:  getEnv("DB_SSLMODE", "disable"),
+			Timeout:  60,
 		},
 		Config_Minio{
 			Host:         getEnv("MINIO_HOST", "192.168.31.195:9000"),
