@@ -17,38 +17,36 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func (sv *OLD_SERVER_HANDLERS) HandleConnections() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		uidStr := r.URL.Query().Get("user_id")
-		userID, err := strconv.Atoi(uidStr)
-		if err != nil {
-			log.Println("Ошибка: не указан или неверен user_id")
-			return
-		}
-		user_id := int64(userID)
-		conn, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		defer conn.Close()
+func (sv *OLD_SERVER_HANDLERS) HandleConnections(w http.ResponseWriter, r *http.Request) {
+	uidStr := r.URL.Query().Get("user_id")
+	userID, err := strconv.Atoi(uidStr)
+	if err != nil {
+		log.Println("Ошибка: не указан или неверен user_id")
+		return
+	}
+	user_id := int64(userID)
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer conn.Close()
 
-		// 2. Регистрируем нового клиента
-		sv.clientsMu.Lock()
-		sv.clients[user_id] = conn
-		sv.clientsMu.Unlock()
+	// 2. Регистрируем нового клиента
+	sv.clientsMu.Lock()
+	sv.clients[user_id] = conn
+	sv.clientsMu.Unlock()
 
-		log.Printf("Пользователь %d подключился!\n", userID)
-		for {
-			_, msg, err := conn.ReadMessage()
-			if err != nil {
-				sv.clientsMu.Lock()
-				delete(sv.clients, user_id)
-				sv.clientsMu.Unlock()
-				break
-			}
-			sv.ProcessMessage(msg, user_id)
+	log.Printf("Пользователь %d подключился!\n", userID)
+	for {
+		_, msg, err := conn.ReadMessage()
+		if err != nil {
+			sv.clientsMu.Lock()
+			delete(sv.clients, user_id)
+			sv.clientsMu.Unlock()
+			break
 		}
+		sv.ProcessMessage(msg, user_id)
 	}
 }
 

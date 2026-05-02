@@ -65,10 +65,10 @@ func (h *OLD_SERVER_HANDLERS) Routes() []core_http_server.Route {
 			Handler: h.GetChatMembers,
 		},
 		{
-			Method: http.MethodGet,
-			Path: "/ws",
+			Method:  http.MethodGet,
+			Path:    "/ws",
 			Handler: h.HandleConnections,
-		}
+		},
 	}
 }
 
