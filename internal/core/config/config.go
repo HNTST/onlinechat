@@ -67,7 +67,7 @@ func Load() *Config {
 			LogLevel: getEnv("LOGGER_LEVEL", "INFO"),
 		},
 		Config_Server{
-			Addr:            getEnv("HTTP_ADDR", "localhost:8080"),
+			Addr:            getEnv("HTTP_ADDR", ":8080"),
 			ShutdownTimeout: 60,
 		},
 	}

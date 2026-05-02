@@ -60,6 +60,10 @@ func (h *OLD_SERVER_HANDLERS) Routes() []core_http_server.Route {
 			Path:    "/messages",
 			Handler: h.GetUserMessages,
 		},
+		{Method: http.MethodGet,
+			Path:    "/chats/members",
+			Handler: h.GetChatMembers,
+		},
 	}
 }
 
@@ -287,6 +291,40 @@ func (sv *OLD_SERVER_HANDLERS) GetUserID(w http.ResponseWriter, r *http.Request)
 	}
 	var resp struct {
 		Id int64 `json:"user_id"`
+	}
+	resp.Id = id
+	w.WriteHeader(http.StatusOK) // 200 — Всё Ок
+	err = json.NewEncoder(w).Encode(resp)
+	if err != nil {
+		sv.sendError(w, core_errors.ErrEncodingRequest.Error(), http.StatusInternalServerError, err)
+		return
+	}
+}
+
+func (sv *OLD_SERVER_HANDLERS) GetChatMembers(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var (
+		err error
+		id  []int64
+	)
+	chat_idParam := r.URL.Query().Get("chat_id")
+	if chat_idParam == "" {
+		sv.sendError(w, core_errors.ErrParamMissing.Error(), http.StatusBadRequest, nil)
+		return
+	}
+	chat_id, err := strconv.Atoi(chat_idParam)
+	if err != nil {
+		sv.sendError(w, core_errors.ErrParamMissing.Error(), http.StatusBadRequest, err)
+		return
+	}
+
+	id, err = sv.service.GetChatMembers(int64(chat_id))
+	if err != nil {
+		sv.sendError(w, core_errors.ErrUserNotFound.Error(), http.StatusNotFound, err)
+		return
+	}
+	var resp struct {
+		Id []int64 `json:"members"`
 	}
 	resp.Id = id
 	w.WriteHeader(http.StatusOK) // 200 — Всё Ок
