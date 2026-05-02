@@ -64,6 +64,11 @@ func (h *OLD_SERVER_HANDLERS) Routes() []core_http_server.Route {
 			Path:    "/chats/members",
 			Handler: h.GetChatMembers,
 		},
+		{
+			Method: http.MethodGet,
+			Path: "/ws",
+			Handler: h.HandleConnections,
+		}
 	}
 }
 
