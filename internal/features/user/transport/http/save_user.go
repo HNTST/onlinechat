@@ -33,7 +33,7 @@ func (h *UsersHTTPHandler) SaveUser(rw http.ResponseWriter, r *http.Request) {
 	userDomain := domainFromDTO(request)
 	userDomain, err := h.usersService.SaveUser(ctx, userDomain)
 	if err != nil {
-		responseHandler.ErrorResponse(err, "failed to create user")
+		responseHandler.ErrorResponse(err, "failed to save user")
 		return
 	}
 	response := dtoFromDomain(userDomain)

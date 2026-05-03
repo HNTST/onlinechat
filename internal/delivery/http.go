@@ -1,12 +1,15 @@
 package delivery
 
 import (
+	"context"
 	"discord/internal/core/domain"
 	core_errors "discord/internal/core/errors"
 	core_logger "discord/internal/core/logger"
+	core_http_response "discord/internal/core/transport/response"
 	core_http_server "discord/internal/core/transport/server"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
 	"sync"
@@ -15,13 +18,25 @@ import (
 )
 
 type OLD_SERVER_HANDLERS struct {
-	service   domain.Service
+	service   Service
 	clients   map[int64]*websocket.Conn
 	clientsMu sync.Mutex
 	logger    *core_logger.Logger
 }
+type Service interface {
+	GetUserID(ctx context.Context, username string) (int64, error)
+	SaveUser(ctx context.Context, username, password string) (int64, error)
+	SaveChat(ctx context.Context, chat_name string, user_id, target_user_id int64) (int64, error)
+	GetUser(ctx context.Context, user_id int64) (domain.User, error)
+	GetUserChats(ctx context.Context, user_id int64) ([]domain.Chat, error)
+	GetUserMessages(ctx context.Context, chat_id int64) ([]domain.Messages, error)
+	GetChatMembers(ctx context.Context, chat_id int64) ([]int64, error)
+	SaveMessage(ctx context.Context, message domain.Messages) error
+	UploadUserAvatar(ctx context.Context, user_id int64, file io.Reader, orig_file_name string, size int64, content_type string) (int64, error)
+	AddUserToChat(ctx context.Context, chat_id, target_user_id int64) error
+}
 
-func NewServer(logger *core_logger.Logger, s domain.Service) *OLD_SERVER_HANDLERS {
+func NewServer(logger *core_logger.Logger, s Service) *OLD_SERVER_HANDLERS {
 	return &OLD_SERVER_HANDLERS{
 		service:   s,
 		clients:   make(map[int64]*websocket.Conn),
@@ -78,6 +93,9 @@ func (h *OLD_SERVER_HANDLERS) Routes() []core_http_server.Route {
 }
 
 func (sv *OLD_SERVER_HANDLERS) SaveUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	log := core_logger.FromContext(ctx)
+	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
 	w.Header().Set("Content-Type", "application/json")
 	var (
 		err error
@@ -86,19 +104,18 @@ func (sv *OLD_SERVER_HANDLERS) SaveUser(w http.ResponseWriter, r *http.Request) 
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
-
 	err = json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
-		sv.sendError(w, core_errors.ErrInvalidJSON.Error(), http.StatusBadRequest, err)
+		responseHandler.ErrorResponse(err, "failed to decode json")
 		return
 	}
-	id, err := sv.service.SaveUser(input.Username, input.Password)
+	id, err := sv.service.SaveUser(ctx, input.Username, input.Password)
 	if err != nil {
 		if errors.Is(err, core_errors.ErrUserAlreadyExists) {
-			sv.sendError(w, core_errors.ErrUserAlreadyExists.Error(), http.StatusConflict, err)
+			responseHandler.ErrorResponse(err, "user already exists")
 			return
 		}
-		sv.sendError(w, core_errors.ErrInternal.Error(), http.StatusInternalServerError, err)
+		responseHandler.ErrorResponse(err, "failed to save user")
 		return
 	}
 
@@ -109,13 +126,15 @@ func (sv *OLD_SERVER_HANDLERS) SaveUser(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusCreated)
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
-		sv.sendError(w, core_errors.ErrEncodingRequest.Error(), http.StatusInternalServerError, err)
+		responseHandler.ErrorResponse(err, "failed to encode json")
 		return
 	}
 }
 
 func (sv *OLD_SERVER_HANDLERS) SaveChat(w http.ResponseWriter, r *http.Request) {
-
+	ctx := r.Context()
+	log := core_logger.FromContext(ctx)
+	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
 	w.Header().Set("Content-Type", "application/json")
 	var (
 		err error
@@ -127,13 +146,13 @@ func (sv *OLD_SERVER_HANDLERS) SaveChat(w http.ResponseWriter, r *http.Request) 
 	}
 	err = json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
-		sv.sendError(w, core_errors.ErrInvalidJSON.Error(), http.StatusBadRequest, err)
+		responseHandler.ErrorResponse(err, "failed to decode json")
 		return
 	}
 
-	id, err := sv.service.SaveChat(input.ChatName, input.Author, input.TargetUser)
+	id, err := sv.service.SaveChat(ctx, input.ChatName, input.Author, input.TargetUser)
 	if err != nil {
-		sv.sendError(w, core_errors.ErrInternal.Error(), http.StatusInternalServerError, err)
+		responseHandler.ErrorResponse(err, "failed to save chat")
 		return
 	}
 	var resp struct {
@@ -143,36 +162,38 @@ func (sv *OLD_SERVER_HANDLERS) SaveChat(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusCreated) // 201
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
-		sv.sendError(w, core_errors.ErrEncodingRequest.Error(), http.StatusInternalServerError, err)
+		responseHandler.ErrorResponse(err, "failed to encode json")
 		return
 	}
 }
 
 func (sv *OLD_SERVER_HANDLERS) UpdateUserAvatar(w http.ResponseWriter, r *http.Request) {
-
+	ctx := r.Context()
+	log := core_logger.FromContext(ctx)
+	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
 	w.Header().Set("Content-Type", "application/json")
 
 	user_idParam := r.URL.Query().Get("user_id")
 	if user_idParam == "" {
-		sv.sendError(w, core_errors.ErrParamMissing.Error(), http.StatusBadRequest, nil)
+		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "param is incorrect")
 		return
 	}
 	user_id, err := strconv.Atoi(user_idParam)
 	if err != nil {
-		sv.sendError(w, core_errors.ErrParamMissing.Error(), http.StatusBadRequest, err)
+		responseHandler.ErrorResponse(err, "param is incorrect")
 		return
 	}
 
 	file, header, err := r.FormFile("new_user_avatar")
 	if err != nil {
-		sv.sendError(w, "ошибка получения файла", http.StatusBadRequest, err)
+		responseHandler.ErrorResponse(err, "failed to get avatar")
 		return
 	}
 	defer file.Close()
 
-	file_id, err := sv.service.UploadUserAvatar(r.Context(), int64(user_id), file, header.Filename, header.Size, header.Header.Get("Content-Type"))
+	file_id, err := sv.service.UploadUserAvatar(ctx, int64(user_id), file, header.Filename, header.Size, header.Header.Get("Content-Type"))
 	if err != nil {
-		sv.sendError(w, "ошибка сохранения файла", http.StatusInternalServerError, err)
+		responseHandler.ErrorResponse(err, "failed to save user avatar")
 		return
 	}
 	var resp struct {
@@ -182,13 +203,17 @@ func (sv *OLD_SERVER_HANDLERS) UpdateUserAvatar(w http.ResponseWriter, r *http.R
 	w.WriteHeader(http.StatusCreated) // 201
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
-		sv.sendError(w, core_errors.ErrEncodingRequest.Error(), http.StatusInternalServerError, err)
+		responseHandler.ErrorResponse(err, "failed to encode json")
 		return
 	}
 }
 
 func (sv *OLD_SERVER_HANDLERS) AddUserToChat(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	ctx := r.Context()
+
+	log := core_logger.FromContext(ctx)
+	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
 
 	var input struct {
 		Chat_id     int64 `json:"chat_id"`
@@ -196,12 +221,12 @@ func (sv *OLD_SERVER_HANDLERS) AddUserToChat(w http.ResponseWriter, r *http.Requ
 	}
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
-		sv.sendError(w, core_errors.ErrInvalidJSON.Error(), http.StatusBadRequest, err)
+		responseHandler.ErrorResponse(err, "failed to decode json")
 		return
 	}
-	err = sv.service.AddUserToChat(input.Chat_id, input.Target_user)
+	err = sv.service.AddUserToChat(ctx, input.Chat_id, input.Target_user)
 	if err != nil {
-		sv.sendError(w, core_errors.ErrInternal.Error(), http.StatusInternalServerError, err)
+		responseHandler.ErrorResponse(err, "failed to add user")
 		return
 	}
 	w.WriteHeader(http.StatusOK) // 200 — Всё Ок
@@ -209,8 +234,11 @@ func (sv *OLD_SERVER_HANDLERS) AddUserToChat(w http.ResponseWriter, r *http.Requ
 
 // --- GET
 func (sv *OLD_SERVER_HANDLERS) GetUser(w http.ResponseWriter, r *http.Request) {
+
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
+	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
+
 	log.Warn("Hello from GetUser HTTP")
 	w.Header().Set("Content-Type", "application/json")
 	var (
@@ -219,18 +247,18 @@ func (sv *OLD_SERVER_HANDLERS) GetUser(w http.ResponseWriter, r *http.Request) {
 	)
 	user_idParam := r.URL.Query().Get("user_id")
 	if user_idParam == "" {
-		sv.sendError(w, core_errors.ErrParamMissing.Error(), http.StatusBadRequest, nil)
+		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "param is incorrect")
 		return
 	}
 	user_id, err := strconv.Atoi(user_idParam)
 	if err != nil {
-		sv.sendError(w, core_errors.ErrParamMissing.Error(), http.StatusBadRequest, err)
+		responseHandler.ErrorResponse(err, "param is incorrect")
 		return
 	}
 
-	user, err = sv.service.GetUser(int64(user_id))
+	user, err = sv.service.GetUser(ctx, int64(user_id))
 	if err != nil {
-		sv.sendError(w, core_errors.ErrUserNotFound.Error(), http.StatusNotFound, err)
+		responseHandler.ErrorResponse(err, "failed to get user")
 		return
 	}
 	w.WriteHeader(http.StatusOK) // 200 — Всё Ок
@@ -243,35 +271,40 @@ func (sv *OLD_SERVER_HANDLERS) GetUser(w http.ResponseWriter, r *http.Request) {
 
 func (sv *OLD_SERVER_HANDLERS) GetUserChats(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	ctx := r.Context()
+	log := core_logger.FromContext(ctx)
+	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
 	var (
 		err   error
 		chats []domain.Chat
 	)
 	user_idParam := r.URL.Query().Get("user_id")
 	if user_idParam == "" {
-		sv.sendError(w, core_errors.ErrParamMissing.Error(), http.StatusBadRequest, nil)
+		responseHandler.ErrorResponse(core_errors.ErrParamMissing, "param is incorrect")
 		return
 	}
 	user_id, err := strconv.Atoi(user_idParam)
 	if err != nil {
-		sv.sendError(w, core_errors.ErrParamMissing.Error(), http.StatusBadRequest, err)
+		responseHandler.ErrorResponse(err, "param is incorrect")
 		return
 	}
-	chats, err = sv.service.GetUserChats(int64(user_id))
+	chats, err = sv.service.GetUserChats(ctx, int64(user_id))
 	if err != nil {
-		sv.sendError(w, core_errors.ErrInternal.Error(), http.StatusInternalServerError, err)
+		responseHandler.ErrorResponse(err, "failed to get user's chats")
 		return
 	}
 	w.WriteHeader(http.StatusOK) // 200
 	err = json.NewEncoder(w).Encode(chats)
 	if err != nil {
-		sv.sendError(w, core_errors.ErrEncodingRequest.Error(), http.StatusInternalServerError, err)
+		responseHandler.ErrorResponse(err, "failed to encode json")
 		return
 	}
 }
 
 func (sv *OLD_SERVER_HANDLERS) GetUserMessages(w http.ResponseWriter, r *http.Request) {
-
+	ctx := r.Context()
+	log := core_logger.FromContext(ctx)
+	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
 	w.Header().Set("Content-Type", "application/json")
 	var (
 		err      error
@@ -279,30 +312,32 @@ func (sv *OLD_SERVER_HANDLERS) GetUserMessages(w http.ResponseWriter, r *http.Re
 	)
 	chat_idParam := r.URL.Query().Get("chat_id")
 	if chat_idParam == "" {
-		sv.sendError(w, core_errors.ErrParamMissing.Error(), http.StatusBadRequest, nil)
+		responseHandler.ErrorResponse(core_errors.ErrParamMissing, "param is incorrect")
 		return
 	}
 	chat_id, err := strconv.Atoi(chat_idParam)
 	if err != nil {
-		sv.sendError(w, core_errors.ErrParamMissing.Error(), http.StatusBadRequest, err)
+		responseHandler.ErrorResponse(err, "param is incorrect")
 		return
 	}
 
-	messages, err = sv.service.GetUserMessages(int64(chat_id))
+	messages, err = sv.service.GetUserMessages(ctx, int64(chat_id))
 	if err != nil {
-		sv.sendError(w, core_errors.ErrInternal.Error(), http.StatusInternalServerError, err)
+		responseHandler.ErrorResponse(err, "failed to get user's messages")
 		return
 	}
 	w.WriteHeader(http.StatusOK) // 200
 	err = json.NewEncoder(w).Encode(messages)
 	if err != nil {
-		sv.sendError(w, core_errors.ErrEncodingRequest.Error(), http.StatusInternalServerError, err)
+		responseHandler.ErrorResponse(err, "failed to encode json")
 		return
 	}
 }
 
 func (sv *OLD_SERVER_HANDLERS) GetUserID(w http.ResponseWriter, r *http.Request) {
-
+	ctx := r.Context()
+	log := core_logger.FromContext(ctx)
+	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
 	w.Header().Set("Content-Type", "application/json")
 	var (
 		err error
@@ -310,13 +345,13 @@ func (sv *OLD_SERVER_HANDLERS) GetUserID(w http.ResponseWriter, r *http.Request)
 	)
 	username := r.URL.Query().Get("username")
 	if username == "" {
-		sv.sendError(w, core_errors.ErrParamMissing.Error(), http.StatusBadRequest, nil)
+		responseHandler.ErrorResponse(core_errors.ErrParamMissing, "param is incorrect")
 		return
 	}
 
-	id, err = sv.service.GetUserID(username)
+	id, err = sv.service.GetUserID(ctx, username)
 	if err != nil {
-		sv.sendError(w, core_errors.ErrUserNotFound.Error(), http.StatusNotFound, err)
+		responseHandler.ErrorResponse(err, "failed to get user_id")
 		return
 	}
 	var resp struct {
@@ -326,31 +361,35 @@ func (sv *OLD_SERVER_HANDLERS) GetUserID(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusOK) // 200 — Всё Ок
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
-		sv.sendError(w, core_errors.ErrEncodingRequest.Error(), http.StatusInternalServerError, err)
+		responseHandler.ErrorResponse(err, "failed to encode json")
 		return
 	}
 }
 
 func (sv *OLD_SERVER_HANDLERS) GetChatMembers(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	log := core_logger.FromContext(ctx)
+	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
 	w.Header().Set("Content-Type", "application/json")
 	var (
 		err error
 		id  []int64
 	)
+
 	chat_idParam := r.URL.Query().Get("chat_id")
 	if chat_idParam == "" {
-		sv.sendError(w, core_errors.ErrParamMissing.Error(), http.StatusBadRequest, nil)
+		responseHandler.ErrorResponse(core_errors.ErrParamMissing, "param is incorrect")
 		return
 	}
 	chat_id, err := strconv.Atoi(chat_idParam)
 	if err != nil {
-		sv.sendError(w, core_errors.ErrParamMissing.Error(), http.StatusBadRequest, err)
+		responseHandler.ErrorResponse(err, "param is incorrect")
 		return
 	}
 
-	id, err = sv.service.GetChatMembers(int64(chat_id))
+	id, err = sv.service.GetChatMembers(ctx, int64(chat_id))
 	if err != nil {
-		sv.sendError(w, core_errors.ErrUserNotFound.Error(), http.StatusNotFound, err)
+		responseHandler.ErrorResponse(err, "failed to get chat members")
 		return
 	}
 	var resp struct {
@@ -360,7 +399,7 @@ func (sv *OLD_SERVER_HANDLERS) GetChatMembers(w http.ResponseWriter, r *http.Req
 	w.WriteHeader(http.StatusOK) // 200 — Всё Ок
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
-		sv.sendError(w, core_errors.ErrEncodingRequest.Error(), http.StatusInternalServerError, err)
+		responseHandler.ErrorResponse(err, "failed to encode json")
 		return
 	}
 }

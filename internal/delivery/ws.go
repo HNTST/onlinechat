@@ -1,6 +1,7 @@
 package delivery
 
 import (
+	"context"
 	"discord/internal/core/domain"
 	"encoding/json"
 	"log"
@@ -36,6 +37,7 @@ func (sv *OLD_SERVER_HANDLERS) HandleConnections(w http.ResponseWriter, r *http.
 	sv.clientsMu.Lock()
 	sv.clients[user_id] = conn
 	sv.clientsMu.Unlock()
+	ctx := r.Context()
 
 	log.Printf("Пользователь %d подключился!\n", userID)
 	for {
@@ -46,11 +48,11 @@ func (sv *OLD_SERVER_HANDLERS) HandleConnections(w http.ResponseWriter, r *http.
 			sv.clientsMu.Unlock()
 			break
 		}
-		sv.ProcessMessage(msg, user_id)
+		sv.ProcessMessage(ctx, msg, user_id)
 	}
 }
 
-func (sv *OLD_SERVER_HANDLERS) ProcessMessage(data []byte, actualSenderID int64) {
+func (sv *OLD_SERVER_HANDLERS) ProcessMessage(ctx context.Context, data []byte, actualSenderID int64) {
 	var input struct {
 		Message   string `json:"message"`
 		Chat_id   int64  `json:"chat_id"`
@@ -71,11 +73,11 @@ func (sv *OLD_SERVER_HANDLERS) ProcessMessage(data []byte, actualSenderID int64)
 		ChatId:   input.Chat_id,
 		Sent_at:  time.Now(),
 	}
-	if err := sv.service.SaveMessage(m); err != nil {
+	if err := sv.service.SaveMessage(ctx, m); err != nil {
 		log.Println("Ошибка БД:", err)
 	}
 
-	membersIDs, err := sv.service.GetChatMembers(m.ChatId)
+	membersIDs, err := sv.service.GetChatMembers(ctx, m.ChatId)
 	if err != nil {
 		log.Println("Ошибка получения участников:", err)
 		return

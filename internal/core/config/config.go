@@ -57,7 +57,7 @@ func Load() *Config {
 			Password: getEnv("DB_PASSWORD", "password"),
 			Name:     getEnv("DB_NAME", "discord"),
 			Sslmode:  getEnv("DB_SSLMODE", "disable"),
-			Timeout:  60,
+			Timeout:  60 * time.Second,
 		},
 		Config_Minio{
 			Host:         getEnv("MINIO_HOST", "192.168.31.195:9000"),
@@ -70,7 +70,7 @@ func Load() *Config {
 		},
 		Config_Server{
 			Addr:            getEnv("HTTP_ADDR", ":8080"),
-			ShutdownTimeout: 60,
+			ShutdownTimeout: 60 * time.Second,
 		},
 	}
 }

@@ -27,7 +27,7 @@ type ConnectionPool struct {
 }
 
 func NewConnectionPool(ctx context.Context, cfg core_config.Config_DB) (*ConnectionPool, error) {
-	connectionString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s&sslmode=disable",
+	connectionString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Name,
 	)
 	pgxconfig, err := pgxpool.ParseConfig(connectionString)

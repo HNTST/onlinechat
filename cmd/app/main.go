@@ -4,9 +4,13 @@ import (
 	"context"
 	core_config "discord/internal/core/config"
 	core_logger "discord/internal/core/logger"
+	core_postgres_pool "discord/internal/core/repository/postgres/pool"
 	core_http_middleware "discord/internal/core/transport/middleware"
 	core_http_server "discord/internal/core/transport/server"
 	"discord/internal/delivery"
+	users_postgres_repository "discord/internal/features/user/repository/postges"
+	users_service "discord/internal/features/user/service"
+	users_transport_http "discord/internal/features/user/transport/http"
 	"discord/internal/repository/minio"
 	"discord/internal/repository/postgres"
 	"discord/internal/service"
@@ -26,10 +30,9 @@ func main() {
 
 	// Старые обработчики переписанные под новый HTTP
 	logger.Info("Подлючение к базе данных posgres")
-	repo := postgres.NewDatabse(cfg.Config_DB)
-	if err := repo.InitDB(); err != nil {
-		logger.Error("Ошибка подлючения к базе данных", "error", err.Error())
-		return
+	pgPool, err := core_postgres_pool.NewConnectionPool(ctx, cfg.Config_DB)
+	if err != nil {
+		logger.Error("PgPool run error", "error", err)
 	}
 	logger.Info("Успешное подлючение к базе  postges")
 
@@ -41,21 +44,18 @@ func main() {
 	}
 	logger.Info("Успешное подлючение к базе minio")
 
-	sv := service.NewService(repo, mn)
+	oldRepo := postgres.NewOldRepostiroty(pgPool)
+	sv := service.NewService(oldRepo, mn)
 	oldTransport := delivery.NewServer(logger, sv)
 	oldRoutes := oldTransport.Routes()
 	apiVersionRouter := core_http_server.NewApiVersionRouter(core_http_server.ApiVersion1)
 	// <--->
-	// pgPool, err := core_postgres_pool.NewConnectionPool(ctx, cfg.Config_DB)
-	// if err != nil {
-	// 	logger.Error("PgPool run error", "error", err)
-	// }
 
-	// usersRepo := users_postgres_repository.NewUsersRepository(pgPool)
-	// usersService := users_service.NewUsersService(usersRepo)
-	// usersTransport := users_transport_http.NewUsersHTTPHandler(usersService)
-	// usersRoutes := usersTransport.Routes()
-	// apiVersionRouter2 := core_http_server.NewApiVersionRouter(core_http_server.ApiVersion2)
+	usersRepo := users_postgres_repository.NewUsersRepository(pgPool)
+	usersService := users_service.NewUsersService(usersRepo)
+	usersTransport := users_transport_http.NewUsersHTTPHandler(usersService)
+	usersRoutes := usersTransport.Routes()
+	apiVersionRouter2 := core_http_server.NewApiVersionRouter(core_http_server.ApiVersion2)
 
 	httpServer := core_http_server.NewHTTPServer(
 		cfg.Config_Server,
@@ -66,12 +66,14 @@ func main() {
 		core_http_middleware.Panic(),
 		core_http_middleware.Trace(),
 	)
+
 	// тоже для старых обработчиков
 	httpServer.RegisterAPIRoutes(apiVersionRouter)
 	apiVersionRouter.RegisterRoutes(oldRoutes...)
 	// <--->
-	// httpServer.RegisterAPIRoutes(apiVersionRouter2)
-	// apiVersionRouter2.RegisterRoutes(usersRoutes...)
+
+	httpServer.RegisterAPIRoutes(apiVersionRouter2)
+	apiVersionRouter2.RegisterRoutes(usersRoutes...)
 
 	if err := httpServer.Run(ctx); err != nil {
 		logger.Error("HTTP server run error", "error", err)
