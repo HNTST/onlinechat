@@ -11,6 +11,7 @@ type UsersService struct {
 
 type UsersRepository interface {
 	SaveUser(ctx context.Context, user domain.User) (domain.User, error)
+	GetUser(ctx context.Context, user_id int64) (domain.User, error)
 }
 
 func NewUsersService(usersRepository UsersRepository) *UsersService {

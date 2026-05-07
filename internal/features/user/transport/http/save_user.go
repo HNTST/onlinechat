@@ -6,18 +6,13 @@ import (
 	core_http_request "discord/internal/core/transport/request"
 	core_http_response "discord/internal/core/transport/response"
 	"net/http"
-	"time"
 )
 
 type SaveUserRequest struct {
 	Username string `json:"username" validate:"required, min=3,max=100"`
 	Password string `json:"password" validate:"omitempty,min=8"` // Временно не обязательный
 }
-type SaveUserResponse struct {
-	Id   int64     `json:"id"`
-	Name string    `json:"username"`
-	Reg  time.Time `json:"reg"`
-}
+type SaveUserResponse UserDTOResponse
 
 func (h *UsersHTTPHandler) SaveUser(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -36,19 +31,11 @@ func (h *UsersHTTPHandler) SaveUser(rw http.ResponseWriter, r *http.Request) {
 		responseHandler.ErrorResponse(err, "failed to save user")
 		return
 	}
-	response := dtoFromDomain(userDomain)
+	response := SaveUserResponse(UserDtoFromDomain(userDomain))
 
 	responseHandler.JSONResponse(response, http.StatusCreated)
 }
 
 func domainFromDTO(dto SaveUserRequest) domain.User {
 	return domain.NewUserUninitialized(dto.Username, dto.Password)
-}
-
-func dtoFromDomain(user domain.User) SaveUserResponse {
-	return SaveUserResponse{
-		Id:   user.Id,
-		Name: user.Name,
-		Reg:  user.Reg,
-	}
 }

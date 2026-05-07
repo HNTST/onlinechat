@@ -70,6 +70,7 @@ func Trace() Middleware {
 			before := time.Now().UTC()
 			log.Info(
 				">>>> INCOMING HTTP REQUEST",
+				slog.String("Method", r.Method),
 				slog.Time("time", before),
 			)
 

@@ -292,7 +292,11 @@ func (sv *OldDbREpository) SaveUser(ctx context.Context, username, password stri
 	return user.Id, nil
 }
 
-func (sv *OldDbREpository) SaveChatWithAuthor(ctx context.Context, name string, user_id, target_user_id int64) (int64, error) {
+func (sv *OldDbREpository) SaveChatWithAuthor(
+	ctx context.Context,
+	name string,
+	user_id, target_user_id int64,
+) (int64, error) {
 	ctx, cancel := context.WithTimeout(ctx, sv.pool.OpTimeout())
 	defer cancel()
 	// ШАГ 0: Проверяем, а не общаются ли они уже?
