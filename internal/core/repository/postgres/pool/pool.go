@@ -18,6 +18,13 @@ type Pool interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 	Close()
 
+	CtxWithTransaction(
+		ctx context.Context,
+		fn func(ctx context.Context) error,
+	) error
+	GetTx(
+		ctx context.Context,
+	) pgx.Tx
 	OpTimeout() time.Duration
 }
 
@@ -52,4 +59,36 @@ func NewConnectionPool(ctx context.Context, cfg core_config.Config_DB) (*Connect
 
 func (p *ConnectionPool) OpTimeout() time.Duration {
 	return p.opTimeout
+}
+
+func (p *ConnectionPool) GetTx(
+	ctx context.Context,
+) pgx.Tx {
+	if tx, ok := ctx.Value("tx").(pgx.Tx); ok {
+		return tx
+	}
+	return nil
+}
+func (p *ConnectionPool) CtxWithTransaction(
+	ctx context.Context,
+	fn func(ctx context.Context) error,
+) error {
+	if tx := p.GetTx(ctx); tx != nil {
+		return fn(ctx)
+	}
+	tx, err := p.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("create context: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	ctx_tx := context.WithValue(ctx, "tx", tx)
+	if err := fn(ctx_tx); err != nil {
+		return fmt.Errorf("execute transaction fn: %w", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit transaction: %w", err)
+	}
+	return nil
+	//ctx := context.WithValue(r.Context(), "log", l)
 }

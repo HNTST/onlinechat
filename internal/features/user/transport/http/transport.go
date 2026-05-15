@@ -30,7 +30,7 @@ func (h *UsersHTTPHandler) Routes() []core_http_server.Route {
 		{
 			Method:  http.MethodGet,
 			Path:    "/user",
-			Handler: h.SaveUser,
+			Handler: h.GetUser,
 		},
 	}
 }

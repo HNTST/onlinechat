@@ -10,11 +10,17 @@ type ChatHttpHandler struct {
 	chatService ChatService
 }
 type ChatService interface {
-	SaveChat(ctx context.Context,
+	SaveChat(
+		ctx context.Context,
 		name string,
 		user_id,
 		target_user_id int64,
 	) (int64, error)
+	AddUserToChat(
+		ctx context.Context,
+		chat_id int64,
+		user_id []int64,
+	) error
 }
 
 func NewChatHttpHandler(
@@ -31,6 +37,11 @@ func (h *ChatHttpHandler) Routes() []core_http_server.Route {
 			Method:  http.MethodPost,
 			Path:    "/chat",
 			Handler: h.SaveChat,
+		},
+		{
+			Method:  http.MethodPost,
+			Path:    "/chat/{chat_id}/members",
+			Handler: h.AddUserToChat,
 		},
 	}
 }
