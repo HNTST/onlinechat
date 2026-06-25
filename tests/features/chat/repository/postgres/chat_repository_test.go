@@ -222,6 +222,13 @@ func (s *ChatRepositoryTestSuite) TestAddUserToChat_WithTx() {
 
 func (s *ChatRepositoryTestSuite) applyMigrations(ctx context.Context) {
 	migrations := []string{
+		`CREATE TABLE IF NOT EXISTS files (
+			id SERIAL PRIMARY KEY,
+			file_key VARCHAR(255) UNIQUE NOT NULL,
+			original_file_name VARCHAR(255) NOT NULL,
+			type_file VARCHAR(255) NOT NULL,
+			size_file BIGINT NOT NULL
+		)`,
 		`CREATE TABLE IF NOT EXISTS users (
 			id SERIAL PRIMARY KEY,
 			username VARCHAR(255) UNIQUE NOT NULL,
@@ -244,6 +251,22 @@ func (s *ChatRepositoryTestSuite) applyMigrations(ctx context.Context) {
 			message TEXT NOT NULL,
 			sent_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)`,
+		`DO $$ BEGIN
+			IF NOT EXISTS (
+				SELECT 1 FROM information_schema.columns
+				WHERE table_name='users' AND column_name='avatar_id'
+			) THEN
+				ALTER TABLE users ADD COLUMN avatar_id INTEGER;
+			END IF;
+		END $$`,
+		`DO $$ BEGIN
+			IF NOT EXISTS (
+				SELECT 1 FROM information_schema.table_constraints
+				WHERE constraint_name='fk_avatar_file' AND table_name='users'
+			) THEN
+				ALTER TABLE users ADD CONSTRAINT fk_avatar_file FOREIGN KEY (avatar_id) REFERENCES files(id);
+			END IF;
+		END $$`,
 	}
 	for _, m := range migrations {
 		_, err := s.pool.Exec(ctx, m)
