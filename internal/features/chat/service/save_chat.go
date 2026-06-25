@@ -35,11 +35,12 @@ func (s *ChatService) SaveChat(
 						txCtx,
 						name,
 					)
-					if err != nil {
-						return fmt.Errorf("create chat: %w", err)
-					}
+				if err != nil {
+					return fmt.Errorf("create chat: %w", err)
 				}
-				return fmt.Errorf("create chat: %w", err)
+				return nil
+			}
+			return fmt.Errorf("create chat: %w", err)
 			}
 			err = s.chatRepository.AddUserToChat(
 				txCtx,

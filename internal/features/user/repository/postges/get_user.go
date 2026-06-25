@@ -27,8 +27,8 @@ func (r *UserRepository) GetUser(ctx context.Context, user_id int64) (domain.Use
 	}
 	userDomain := domain.NewUser(
 		userModel.ID,
-		"-1",
 		userModel.Username,
+		"-1",
 		userModel.Reg,
 	)
 	return userDomain, err

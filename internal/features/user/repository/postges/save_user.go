@@ -16,7 +16,7 @@ func (r *UserRepository) SaveUser(ctx context.Context, user domain.User) (domain
 			RETURNING id, username, reg
 		`
 
-	row := r.pool.QueryRow(ctx, query, user.Name, user.Password)
+	row := r.pool.QueryRow(ctx, query, user.Name, user.Password, user.Reg)
 	var userModel UserModel
 	err := row.Scan(
 		&userModel.ID,
@@ -28,8 +28,8 @@ func (r *UserRepository) SaveUser(ctx context.Context, user domain.User) (domain
 	}
 	userDomain := domain.NewUser(
 		userModel.ID,
-		"-1",
 		userModel.Username,
+		"-1",
 		userModel.Reg,
 	)
 
