@@ -2,17 +2,14 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"discord/internal/core/domain"
 	core_errors "discord/internal/core/errors"
 	"errors"
 	"fmt"
 	"time"
 
-	_ "github.com/golang-migrate/migrate/v4/database/postgres" // Драйвер для PostgreSQL
-	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/lib/pq"
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 const SAVE_MESSAGE = "SaveMessage"
@@ -156,7 +153,7 @@ func (sv *OldDbREpository) GetUser(ctx context.Context, id int64) (domain.User, 
 		&user.Reg,
 	)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return user, fmt.Errorf("пользователь с id %d не найден", id)
 		}
 		return user, fmt.Errorf("scan error: %w", err)
@@ -255,8 +252,8 @@ func (sv *OldDbREpository) FindExistingChat(ctx context.Context, user1, user2 in
 	row := sv.pool.QueryRow(ctx, query, user1, user2)
 	err := row.Scan(&chatID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return 0, fmt.Errorf("get rows error: %w", err)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, fmt.Errorf("get rows error: %w", core_errors.ErrChatNotExists)
 		}
 		return 0, fmt.Errorf("get rows error: %w", err)
 	}
@@ -282,7 +279,7 @@ func (sv *OldDbREpository) SaveUser(ctx context.Context, username, password stri
 	row := sv.pool.QueryRow(ctx, query, username, user.Password, user.Reg)
 	err := row.Scan(&user.Id)
 	if err != nil {
-		if pgErr, ok := err.(*pq.Error); ok {
+		if pgErr, ok := err.(*pgconn.PgError); ok {
 			if pgErr.Code == "23505" {
 				return 0, fmt.Errorf("scan error: %w", core_errors.ErrUserAlreadyExists)
 			}
@@ -302,7 +299,9 @@ func (sv *OldDbREpository) SaveChatWithAuthor(
 	// ШАГ 0: Проверяем, а не общаются ли они уже?
 	existingID, err := sv.FindExistingChat(ctx, user_id, target_user_id)
 	if err != nil {
-		return 0, err
+		if !errors.Is(err, core_errors.ErrChatNotExists) {
+			return 0, err
+		}
 	}
 	if existingID > 0 {
 		return existingID, nil // Возвращаем старый чат, не создавая новый
