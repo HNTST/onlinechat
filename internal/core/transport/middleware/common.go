@@ -6,6 +6,7 @@ import (
 	core_http_response "discord/internal/core/transport/response"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -16,6 +17,10 @@ const requestIdHeader = "X-Request-ID"
 func RequestID() Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasPrefix(r.URL.Path, "/swagger/") {
+				next.ServeHTTP(w, r)
+				return
+			}
 			requestId := r.Header.Get(requestIdHeader)
 			if requestId == "" {
 				requestId = uuid.NewString()
@@ -31,6 +36,10 @@ func RequestID() Middleware {
 func Logger(log *core_logger.Logger) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasPrefix(r.URL.Path, "/swagger/") {
+				next.ServeHTTP(w, r)
+				return
+			}
 			requestId := r.Header.Get(requestIdHeader)
 
 			l := log.With(
@@ -47,6 +56,10 @@ func Logger(log *core_logger.Logger) Middleware {
 func Panic() Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasPrefix(r.URL.Path, "/swagger/") {
+				next.ServeHTTP(w, r)
+				return
+			}
 			ctx := r.Context()
 			log := core_logger.FromContext(ctx)
 			responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
@@ -63,6 +76,10 @@ func Panic() Middleware {
 func Trace() Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasPrefix(r.URL.Path, "/swagger/") {
+				next.ServeHTTP(w, r)
+				return
+			}
 			rw := core_http_response.NewResponseWriter(w)
 
 			ctx := r.Context()
@@ -88,6 +105,10 @@ func Trace() Middleware {
 func Cors() Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasPrefix(r.URL.Path, "/swagger/") {
+				next.ServeHTTP(w, r)
+				return
+			}
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
