@@ -14,12 +14,12 @@ type GetUserIDResponse struct {
 
 // GetUserID returns a user ID by username
 //
-//	@Summary		Get user ID
-//	@Description	Get user ID by username
-//	@Tags			v2 / User
+//	@Summary		Получение ID пользователя
+//	@Description	Получение ID пользователя по его имени
+//	@Tags			v2 / Пользователи
 //	@Accept			json
 //	@Produce		json
-//	@Param			username	query		string	true	"Username"
+//	@Param			username	query		string	true	"Имя пользователя"
 //	@Success		200			{object}	GetUserIDResponse
 //	@Failure		400			{object}	object{}
 //	@Router			/api/v2/user_id [get]

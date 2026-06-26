@@ -12,12 +12,12 @@ type GetUserResponse UserDTOResponse
 
 // GetUser returns a user by ID
 //
-//	@Summary		Get user
-//	@Description	Get user details by user ID
-//	@Tags			v2 / User
+//	@Summary		Получение пользователя
+//	@Description	Получение данных пользователя по его ID
+//	@Tags			v2 / Пользователи
 //	@Accept			json
 //	@Produce		json
-//	@Param			user_id	query		int	true	"User ID"
+//	@Param			user_id	query		int	true	"ID пользователя"
 //	@Success		200		{object}	GetUserResponse
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v2/user [get]

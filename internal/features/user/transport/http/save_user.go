@@ -16,12 +16,12 @@ type SaveUserResponse UserDTOResponse
 
 // SaveUser creates a new user
 //
-//	@Summary		Register user
-//	@Description	Create a new user account
-//	@Tags			v2 / User
+//	@Summary		Регистрация пользователя
+//	@Description	Создание новой учётной записи пользователя
+//	@Tags			v2 / Пользователи
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		SaveUserRequest	true	"Registration data"
+//	@Param			request	body		SaveUserRequest	true	"Данные для регистрации"
 //	@Success		201		{object}	SaveUserResponse
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v2/user [post]

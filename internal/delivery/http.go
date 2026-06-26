@@ -94,12 +94,12 @@ func (h *OLD_SERVER_HANDLERS) Routes() []core_http_server.Route {
 
 // SaveUser creates a new user
 //
-//	@Summary		Register user
-//	@Description	Create a new user account
-//	@Tags			v1 / User
+//	@Summary		Регистрация пользователя
+//	@Description	Создание новой учётной записи пользователя
+//	@Tags			v1 / Пользователи
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		object{username=string,password=string}	true	"Registration data"
+//	@Param			request	body		object{username=string,password=string}	true	"Данные для регистрации"
 //	@Success		201		{object}	object{user_id=int64}
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v1/user [post]
@@ -144,12 +144,12 @@ func (sv *OLD_SERVER_HANDLERS) SaveUser(w http.ResponseWriter, r *http.Request) 
 
 // SaveChat creates a new chat
 //
-//	@Summary		Create chat
-//	@Description	Create a new chat with two participants
-//	@Tags			v1 / Chat
+//	@Summary		Создание чата
+//	@Description	Создание нового чата с двумя участниками
+//	@Tags			v1 / Чаты
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		object{chat_name=string,author=int64,target_user=int64}	true	"Chat data"
+//	@Param			request	body		object{chat_name=string,author=int64,target_user=int64}	true	"Данные чата"
 //	@Success		201		{object}	object{chat_id=int64}
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v1/chat [post]
@@ -191,13 +191,13 @@ func (sv *OLD_SERVER_HANDLERS) SaveChat(w http.ResponseWriter, r *http.Request) 
 
 // UpdateUserAvatar uploads an avatar image for a user
 //
-//	@Summary		Upload avatar
-//	@Description	Upload a user avatar file to MinIO and save metadata
-//	@Tags			v1 / Files
+//	@Summary		Загрузка аватара
+//	@Description	Загрузка файла аватара пользователя в MinIO и сохранение метаданных
+//	@Tags			v1 / Файлы
 //	@Accept			mpfd
 //	@Produce		json
-//	@Param			user_id			query		int		true	"User ID"
-//	@Param			new_user_avatar	formData	file	true	"Avatar image file"
+//	@Param			user_id			query		int		true	"ID пользователя"
+//	@Param			new_user_avatar	formData	file	true	"Файл изображения аватара"
 //	@Success		201				{object}	object{file_id=int64}
 //	@Failure		400				{object}	object{}
 //	@Router			/api/v1/user/avatar [post]
@@ -244,12 +244,12 @@ func (sv *OLD_SERVER_HANDLERS) UpdateUserAvatar(w http.ResponseWriter, r *http.R
 
 // AddUserToChat adds a user to an existing chat
 //
-//	@Summary		Add user to chat
-//	@Description	Add a user to an existing chat by chat ID
-//	@Tags			v1 / Chat
+//	@Summary		Добавление пользователя в чат
+//	@Description	Добавление пользователя в существующий чат по ID чата
+//	@Tags			v1 / Чаты
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		object{chat_id=int64,target_user_id=int64}	true	"Add user data"
+//	@Param			request	body		object{chat_id=int64,target_user_id=int64}	true	"Данные для добавления"
 //	@Success		200		{object}	object{}
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v1/chats/add_user [post]
@@ -279,12 +279,12 @@ func (sv *OLD_SERVER_HANDLERS) AddUserToChat(w http.ResponseWriter, r *http.Requ
 
 // GetUser returns a user by ID
 //
-//	@Summary		Get user
-//	@Description	Get user details by user ID
-//	@Tags			v1 / User
+//	@Summary		Получение пользователя
+//	@Description	Получение данных пользователя по его ID
+//	@Tags			v1 / Пользователи
 //	@Accept			json
 //	@Produce		json
-//	@Param			user_id	query		int	true	"User ID"
+//	@Param			user_id	query		int	true	"ID пользователя"
 //	@Success		200		{object}	domain.User
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v1/user [get]
@@ -326,12 +326,12 @@ func (sv *OLD_SERVER_HANDLERS) GetUser(w http.ResponseWriter, r *http.Request) {
 
 // GetUserChats returns all chats for a user
 //
-//	@Summary		Get user chats
-//	@Description	Get all chats that a user is a member of
-//	@Tags			v1 / Chat
+//	@Summary		Чаты пользователя
+//	@Description	Получение всех чатов, в которых состоит пользователь
+//	@Tags			v1 / Чаты
 //	@Accept			json
 //	@Produce		json
-//	@Param			user_id	query		int	true	"User ID"
+//	@Param			user_id	query		int	true	"ID пользователя"
 //	@Success		200		{array}		domain.Chat
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v1/chats [get]
@@ -369,12 +369,12 @@ func (sv *OLD_SERVER_HANDLERS) GetUserChats(w http.ResponseWriter, r *http.Reque
 
 // GetUserMessages returns messages for a chat
 //
-//	@Summary		Get chat messages
-//	@Description	Get all messages in a chat
-//	@Tags			v1 / Chat
+//	@Summary		Сообщения чата
+//	@Description	Получение всех сообщений в чате
+//	@Tags			v1 / Чаты
 //	@Accept			json
 //	@Produce		json
-//	@Param			chat_id	query		int	true	"Chat ID"
+//	@Param			chat_id	query		int	true	"ID чата"
 //	@Success		200		{array}		domain.Messages
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v1/messages [get]
@@ -413,12 +413,12 @@ func (sv *OLD_SERVER_HANDLERS) GetUserMessages(w http.ResponseWriter, r *http.Re
 
 // GetUserID returns a user ID by username
 //
-//	@Summary		Get user ID
-//	@Description	Get user ID by username
-//	@Tags			v1 / User
+//	@Summary		Получение ID пользователя
+//	@Description	Получение ID пользователя по его имени
+//	@Tags			v1 / Пользователи
 //	@Accept			json
 //	@Produce		json
-//	@Param			username	query		string	true	"Username"
+//	@Param			username	query		string	true	"Имя пользователя"
 //	@Success		200			{object}	object{user_id=int64}
 //	@Failure		400			{object}	object{}
 //	@Router			/api/v1/user_id [get]
@@ -456,12 +456,12 @@ func (sv *OLD_SERVER_HANDLERS) GetUserID(w http.ResponseWriter, r *http.Request)
 
 // GetChatMembers returns member IDs for a chat
 //
-//	@Summary		Get chat members
-//	@Description	Get all member user IDs for a chat
-//	@Tags			v1 / Chat
+//	@Summary		Участники чата
+//	@Description	Получение ID всех участников чата
+//	@Tags			v1 / Чаты
 //	@Accept			json
 //	@Produce		json
-//	@Param			chat_id	query		int	true	"Chat ID"
+//	@Param			chat_id	query		int	true	"ID чата"
 //	@Success		200		{object}	object{members=[]int64}
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v1/chats/members [get]

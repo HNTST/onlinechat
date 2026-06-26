@@ -13,12 +13,12 @@ type GetChatMembersResponse struct {
 
 // GetChatMembers returns member IDs for a chat
 //
-//	@Summary		Get chat members
-//	@Description	Get all member user IDs for a chat
-//	@Tags			v2 / Chat
+//	@Summary		Участники чата
+//	@Description	Получение ID всех участников чата
+//	@Tags			v2 / Чаты
 //	@Accept			json
 //	@Produce		json
-//	@Param			chat_id	query		int	true	"Chat ID"
+//	@Param			chat_id	query		int	true	"ID чата"
 //	@Success		200		{object}	GetChatMembersResponse
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v2/chats/members [get]

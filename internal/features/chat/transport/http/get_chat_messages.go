@@ -19,12 +19,12 @@ type MessageDTO struct {
 
 // GetChatMessages returns messages for a chat
 //
-//	@Summary		Get chat messages
-//	@Description	Get all messages in a chat
-//	@Tags			v2 / Chat
+//	@Summary		Сообщения чата
+//	@Description	Получение всех сообщений в чате
+//	@Tags			v2 / Чаты
 //	@Accept			json
 //	@Produce		json
-//	@Param			chat_id	query		int	true	"Chat ID"
+//	@Param			chat_id	query		int	true	"ID чата"
 //	@Success		200		{object}	GetChatMessagesResponse
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v2/messages [get]

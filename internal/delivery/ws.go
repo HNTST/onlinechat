@@ -20,10 +20,10 @@ var upgrader = websocket.Upgrader{
 
 // HandleConnections upgrades to WebSocket
 //
-//	@Summary		WebSocket connection
-//	@Description	Upgrade HTTP to WebSocket for real-time messaging
+//	@Summary		WebSocket-соединение
+//	@Description	Обновление HTTP до WebSocket для обмена сообщениями в реальном времени
 //	@Tags			v1 / WebSocket
-//	@Param			user_id	query	int	true	"User ID"
+//	@Param			user_id	query	int	true	"ID пользователя"
 //	@Success		101		{object}	object{}
 //	@Router			/api/v1/ws [get]
 func (sv *OLD_SERVER_HANDLERS) HandleConnections(w http.ResponseWriter, r *http.Request) {

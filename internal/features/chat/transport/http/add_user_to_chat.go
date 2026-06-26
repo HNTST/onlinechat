@@ -18,13 +18,13 @@ type AddUserToChatResponse struct {
 
 // AddUserToChat adds users to an existing chat
 //
-//	@Summary		Add users to chat
-//	@Description	Add users to an existing chat by chat ID
-//	@Tags			v2 / Chat
+//	@Summary		Добавление пользователей в чат
+//	@Description	Добавление пользователей в существующий чат по его ID
+//	@Tags			v2 / Чаты
 //	@Accept			json
 //	@Produce		json
-//	@Param			chat_id	query		int					true	"Chat ID"
-//	@Param			request	body		AddUserToChatRequest	true	"Users IDs"
+//	@Param			chat_id	path		int					true	"ID чата"
+//	@Param			request	body		AddUserToChatRequest	true	"ID пользователей"
 //	@Success		200		{object}	AddUserToChatResponse
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v2/chat/{chat_id}/members [post]

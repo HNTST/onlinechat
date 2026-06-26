@@ -17,12 +17,12 @@ type ChatDTO struct {
 
 // GetUserChats returns all chats for a user
 //
-//	@Summary		Get user chats
-//	@Description	Get all chats that a user is a member of
-//	@Tags			v2 / Chat
+//	@Summary		Чаты пользователя
+//	@Description	Получение всех чатов, в которых состоит пользователь
+//	@Tags			v2 / Чаты
 //	@Accept			json
 //	@Produce		json
-//	@Param			user_id	query		int	true	"User ID"
+//	@Param			user_id	query		int	true	"ID пользователя"
 //	@Success		200		{object}	GetUserChatsResponse
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v2/chats [get]

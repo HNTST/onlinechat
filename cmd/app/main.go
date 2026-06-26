@@ -1,11 +1,12 @@
-// @title Discord API
-// @version 1.0
-// @description Messenger / chat application API (v1 legacy + v2 feature-based)
-// @BasePath /api/v2
 package main
 
+// @title Discord API
+// @version 1.0
+// @description API мессенджер / чат-приложение (v1 legacy + v2 feature-based)
+// @BasePath /
 import (
 	"context"
+	_ "discord/docs"
 	core_config "discord/internal/core/config"
 	core_logger "discord/internal/core/logger"
 	core_postgres_pool "discord/internal/core/repository/postgres/pool"
@@ -13,12 +14,11 @@ import (
 	core_http_server "discord/internal/core/transport/server"
 	"discord/internal/delivery"
 	chats_postgres_repository "discord/internal/features/chat/repository/postgres"
-	httpSwagger "github.com/swaggo/http-swagger/v2"
 	chat_service "discord/internal/features/chat/service"
 	chat_transport_http "discord/internal/features/chat/transport/http"
 	chat_transport_ws "discord/internal/features/chat/transport/ws"
-	files_postgres_repository "discord/internal/features/files/repository/postgres"
 	files_repository "discord/internal/features/files/repository"
+	files_postgres_repository "discord/internal/features/files/repository/postgres"
 	files_service "discord/internal/features/files/service"
 	files_transport_http "discord/internal/features/files/transport/http"
 	users_postgres_repository "discord/internal/features/user/repository/postges"
@@ -30,6 +30,8 @@ import (
 	"net/http"
 	"os/signal"
 	"syscall"
+
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
 func main() {
@@ -114,9 +116,7 @@ func main() {
 		core_http_server.NewRoute(http.MethodGet, "/ws", chatWSHandler.HandleConnections),
 	)
 
-	httpServer.Handle("/swagger/", httpSwagger.Handler(
-		httpSwagger.URL("/swagger/swagger.json"),
-	))
+	httpServer.Handle("/swagger/", httpSwagger.WrapHandler)
 
 	if err := httpServer.Run(ctx); err != nil {
 		logger.Error("HTTP server run error", "error", err)

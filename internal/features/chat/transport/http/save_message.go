@@ -17,12 +17,12 @@ type SaveMessageRequest struct {
 
 // SaveMessage creates a new message in a chat
 //
-//	@Summary		Send message
-//	@Description	Send a message to a chat
-//	@Tags			v2 / Chat
+//	@Summary		Отправка сообщения
+//	@Description	Отправка сообщения в чат
+//	@Tags			v2 / Чаты
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		SaveMessageRequest	true	"Message data"
+//	@Param			request	body		SaveMessageRequest	true	"Данные сообщения"
 //	@Success		201		{object}	object{}
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v2/chat/message [post]

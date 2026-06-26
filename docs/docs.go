@@ -17,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/api/v1/chat": {
             "post": {
-                "description": "Create a new chat with two participants",
+                "description": "Создание нового чата с двумя участниками",
                 "consumes": [
                     "application/json"
                 ],
@@ -25,12 +25,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "v1 / Chat"
+                    "v1 / Чаты"
                 ],
-                "summary": "Create chat",
+                "summary": "Создание чата",
                 "parameters": [
                     {
-                        "description": "Chat data",
+                        "description": "Данные чата",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -76,7 +76,7 @@ const docTemplate = `{
         },
         "/api/v1/chats": {
             "get": {
-                "description": "Get all chats that a user is a member of",
+                "description": "Получение всех чатов, в которых состоит пользователь",
                 "consumes": [
                     "application/json"
                 ],
@@ -84,13 +84,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "v1 / Chat"
+                    "v1 / Чаты"
                 ],
-                "summary": "Get user chats",
+                "summary": "Чаты пользователя",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "User ID",
+                        "description": "ID пользователя",
                         "name": "user_id",
                         "in": "query",
                         "required": true
@@ -102,7 +102,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/domain.Chat"
+                                "$ref": "#/definitions/discord_internal_core_domain.Chat"
                             }
                         }
                     },
@@ -117,7 +117,7 @@ const docTemplate = `{
         },
         "/api/v1/chats/add_user": {
             "post": {
-                "description": "Add a user to an existing chat by chat ID",
+                "description": "Добавление пользователя в существующий чат по ID чата",
                 "consumes": [
                     "application/json"
                 ],
@@ -125,12 +125,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "v1 / Chat"
+                    "v1 / Чаты"
                 ],
-                "summary": "Add user to chat",
+                "summary": "Добавление пользователя в чат",
                 "parameters": [
                     {
-                        "description": "Add user data",
+                        "description": "Данные для добавления",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -167,7 +167,7 @@ const docTemplate = `{
         },
         "/api/v1/chats/members": {
             "get": {
-                "description": "Get all member user IDs for a chat",
+                "description": "Получение ID всех участников чата",
                 "consumes": [
                     "application/json"
                 ],
@@ -175,13 +175,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "v1 / Chat"
+                    "v1 / Чаты"
                 ],
-                "summary": "Get chat members",
+                "summary": "Участники чата",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Chat ID",
+                        "description": "ID чата",
                         "name": "chat_id",
                         "in": "query",
                         "required": true
@@ -214,7 +214,7 @@ const docTemplate = `{
         },
         "/api/v1/messages": {
             "get": {
-                "description": "Get all messages in a chat",
+                "description": "Получение всех сообщений в чате",
                 "consumes": [
                     "application/json"
                 ],
@@ -222,13 +222,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "v1 / Chat"
+                    "v1 / Чаты"
                 ],
-                "summary": "Get chat messages",
+                "summary": "Сообщения чата",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Chat ID",
+                        "description": "ID чата",
                         "name": "chat_id",
                         "in": "query",
                         "required": true
@@ -240,7 +240,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/domain.Messages"
+                                "$ref": "#/definitions/discord_internal_core_domain.Messages"
                             }
                         }
                     },
@@ -255,7 +255,7 @@ const docTemplate = `{
         },
         "/api/v1/user": {
             "get": {
-                "description": "Get user details by user ID",
+                "description": "Получение данных пользователя по его ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -263,13 +263,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "v1 / User"
+                    "v1 / Пользователи"
                 ],
-                "summary": "Get user",
+                "summary": "Получение пользователя",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "User ID",
+                        "description": "ID пользователя",
                         "name": "user_id",
                         "in": "query",
                         "required": true
@@ -279,7 +279,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/domain.User"
+                            "$ref": "#/definitions/discord_internal_core_domain.User"
                         }
                     },
                     "400": {
@@ -291,7 +291,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new user account",
+                "description": "Создание новой учётной записи пользователя",
                 "consumes": [
                     "application/json"
                 ],
@@ -299,12 +299,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "v1 / User"
+                    "v1 / Пользователи"
                 ],
-                "summary": "Register user",
+                "summary": "Регистрация пользователя",
                 "parameters": [
                     {
-                        "description": "Registration data",
+                        "description": "Данные для регистрации",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -345,7 +345,7 @@ const docTemplate = `{
         },
         "/api/v1/user/avatar": {
             "post": {
-                "description": "Upload a user avatar file to MinIO and save metadata",
+                "description": "Загрузка файла аватара пользователя в MinIO и сохранение метаданных",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -353,20 +353,20 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "v1 / Files"
+                    "v1 / Файлы"
                 ],
-                "summary": "Upload avatar",
+                "summary": "Загрузка аватара",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "User ID",
+                        "description": "ID пользователя",
                         "name": "user_id",
                         "in": "query",
                         "required": true
                     },
                     {
                         "type": "file",
-                        "description": "Avatar image file",
+                        "description": "Файл изображения аватара",
                         "name": "new_user_avatar",
                         "in": "formData",
                         "required": true
@@ -396,7 +396,7 @@ const docTemplate = `{
         },
         "/api/v1/user_id": {
             "get": {
-                "description": "Get user ID by username",
+                "description": "Получение ID пользователя по его имени",
                 "consumes": [
                     "application/json"
                 ],
@@ -404,13 +404,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "v1 / User"
+                    "v1 / Пользователи"
                 ],
-                "summary": "Get user ID",
+                "summary": "Получение ID пользователя",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Username",
+                        "description": "Имя пользователя",
                         "name": "username",
                         "in": "query",
                         "required": true
@@ -440,15 +440,15 @@ const docTemplate = `{
         },
         "/api/v1/ws": {
             "get": {
-                "description": "Upgrade HTTP to WebSocket for real-time messaging",
+                "description": "Обновление HTTP до WebSocket для обмена сообщениями в реальном времени",
                 "tags": [
                     "v1 / WebSocket"
                 ],
-                "summary": "WebSocket connection",
+                "summary": "WebSocket-соединение",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "User ID",
+                        "description": "ID пользователя",
                         "name": "user_id",
                         "in": "query",
                         "required": true
@@ -466,7 +466,7 @@ const docTemplate = `{
         },
         "/api/v2/chat": {
             "post": {
-                "description": "Create a new chat with two participants",
+                "description": "Создание нового чата с двумя участниками",
                 "consumes": [
                     "application/json"
                 ],
@@ -474,17 +474,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "v2 / Chat"
+                    "v2 / Чаты"
                 ],
-                "summary": "Create chat",
+                "summary": "Создание чата",
                 "parameters": [
                     {
-                        "description": "Chat data",
+                        "description": "Данные чата",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/chat_transport_http.SaveChatRequest"
+                            "$ref": "#/definitions/internal_features_chat_transport_http.SaveChatRequest"
                         }
                     }
                 ],
@@ -492,7 +492,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/chat_transport_http.SaveChatResponse"
+                            "$ref": "#/definitions/internal_features_chat_transport_http.SaveChatResponse"
                         }
                     },
                     "400": {
@@ -506,7 +506,7 @@ const docTemplate = `{
         },
         "/api/v2/chat/message": {
             "post": {
-                "description": "Send a message to a chat",
+                "description": "Отправка сообщения в чат",
                 "consumes": [
                     "application/json"
                 ],
@@ -514,17 +514,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "v2 / Chat"
+                    "v2 / Чаты"
                 ],
-                "summary": "Send message",
+                "summary": "Отправка сообщения",
                 "parameters": [
                     {
-                        "description": "Message data",
+                        "description": "Данные сообщения",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/chat_transport_http.SaveMessageRequest"
+                            "$ref": "#/definitions/internal_features_chat_transport_http.SaveMessageRequest"
                         }
                     }
                 ],
@@ -546,7 +546,7 @@ const docTemplate = `{
         },
         "/api/v2/chat/{chat_id}/members": {
             "post": {
-                "description": "Add users to an existing chat by chat ID",
+                "description": "Добавление пользователей в существующий чат по его ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -554,24 +554,24 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "v2 / Chat"
+                    "v2 / Чаты"
                 ],
-                "summary": "Add users to chat",
+                "summary": "Добавление пользователей в чат",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Chat ID",
+                        "description": "ID чата",
                         "name": "chat_id",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Users IDs",
+                        "description": "ID пользователей",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/chat_transport_http.AddUserToChatRequest"
+                            "$ref": "#/definitions/internal_features_chat_transport_http.AddUserToChatRequest"
                         }
                     }
                 ],
@@ -579,7 +579,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/chat_transport_http.AddUserToChatResponse"
+                            "$ref": "#/definitions/internal_features_chat_transport_http.AddUserToChatResponse"
                         }
                     },
                     "400": {
@@ -593,7 +593,7 @@ const docTemplate = `{
         },
         "/api/v2/chats": {
             "get": {
-                "description": "Get all chats that a user is a member of",
+                "description": "Получение всех чатов, в которых состоит пользователь",
                 "consumes": [
                     "application/json"
                 ],
@@ -601,13 +601,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "v2 / Chat"
+                    "v2 / Чаты"
                 ],
-                "summary": "Get user chats",
+                "summary": "Чаты пользователя",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "User ID",
+                        "description": "ID пользователя",
                         "name": "user_id",
                         "in": "query",
                         "required": true
@@ -617,7 +617,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/chat_transport_http.GetUserChatsResponse"
+                            "$ref": "#/definitions/internal_features_chat_transport_http.GetUserChatsResponse"
                         }
                     },
                     "400": {
@@ -631,7 +631,7 @@ const docTemplate = `{
         },
         "/api/v2/chats/members": {
             "get": {
-                "description": "Get all member user IDs for a chat",
+                "description": "Получение ID всех участников чата",
                 "consumes": [
                     "application/json"
                 ],
@@ -639,13 +639,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "v2 / Chat"
+                    "v2 / Чаты"
                 ],
-                "summary": "Get chat members",
+                "summary": "Участники чата",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Chat ID",
+                        "description": "ID чата",
                         "name": "chat_id",
                         "in": "query",
                         "required": true
@@ -655,7 +655,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/chat_transport_http.GetChatMembersResponse"
+                            "$ref": "#/definitions/internal_features_chat_transport_http.GetChatMembersResponse"
                         }
                     },
                     "400": {
@@ -669,7 +669,7 @@ const docTemplate = `{
         },
         "/api/v2/messages": {
             "get": {
-                "description": "Get all messages in a chat",
+                "description": "Получение всех сообщений в чате",
                 "consumes": [
                     "application/json"
                 ],
@@ -677,13 +677,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "v2 / Chat"
+                    "v2 / Чаты"
                 ],
-                "summary": "Get chat messages",
+                "summary": "Сообщения чата",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "Chat ID",
+                        "description": "ID чата",
                         "name": "chat_id",
                         "in": "query",
                         "required": true
@@ -693,7 +693,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/chat_transport_http.GetChatMessagesResponse"
+                            "$ref": "#/definitions/internal_features_chat_transport_http.GetChatMessagesResponse"
                         }
                     },
                     "400": {
@@ -707,7 +707,7 @@ const docTemplate = `{
         },
         "/api/v2/user": {
             "get": {
-                "description": "Get user details by user ID",
+                "description": "Получение данных пользователя по его ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -715,13 +715,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "v2 / User"
+                    "v2 / Пользователи"
                 ],
-                "summary": "Get user",
+                "summary": "Получение пользователя",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "User ID",
+                        "description": "ID пользователя",
                         "name": "user_id",
                         "in": "query",
                         "required": true
@@ -731,7 +731,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/users_transport_http.GetUserResponse"
+                            "$ref": "#/definitions/internal_features_user_transport_http.GetUserResponse"
                         }
                     },
                     "400": {
@@ -743,7 +743,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new user account",
+                "description": "Создание новой учётной записи пользователя",
                 "consumes": [
                     "application/json"
                 ],
@@ -751,17 +751,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "v2 / User"
+                    "v2 / Пользователи"
                 ],
-                "summary": "Register user",
+                "summary": "Регистрация пользователя",
                 "parameters": [
                     {
-                        "description": "Registration data",
+                        "description": "Данные для регистрации",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/users_transport_http.SaveUserRequest"
+                            "$ref": "#/definitions/internal_features_user_transport_http.SaveUserRequest"
                         }
                     }
                 ],
@@ -769,7 +769,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/users_transport_http.SaveUserResponse"
+                            "$ref": "#/definitions/internal_features_user_transport_http.SaveUserResponse"
                         }
                     },
                     "400": {
@@ -783,7 +783,7 @@ const docTemplate = `{
         },
         "/api/v2/user/avatar": {
             "post": {
-                "description": "Upload a user avatar file to MinIO and save metadata",
+                "description": "Загрузка файла аватара пользователя в MinIO и сохранение метаданных",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -791,20 +791,20 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "v2 / Files"
+                    "v2 / Файлы"
                 ],
-                "summary": "Upload avatar",
+                "summary": "Загрузка аватара",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "User ID",
+                        "description": "ID пользователя",
                         "name": "user_id",
                         "in": "query",
                         "required": true
                     },
                     {
                         "type": "file",
-                        "description": "Avatar image file",
+                        "description": "Файл изображения аватара",
                         "name": "new_user_avatar",
                         "in": "formData",
                         "required": true
@@ -814,7 +814,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/files_transport_http.UploadAvatarResponse"
+                            "$ref": "#/definitions/internal_features_files_transport_http.UploadAvatarResponse"
                         }
                     },
                     "400": {
@@ -828,7 +828,7 @@ const docTemplate = `{
         },
         "/api/v2/user_id": {
             "get": {
-                "description": "Get user ID by username",
+                "description": "Получение ID пользователя по его имени",
                 "consumes": [
                     "application/json"
                 ],
@@ -836,13 +836,13 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "v2 / User"
+                    "v2 / Пользователи"
                 ],
-                "summary": "Get user ID",
+                "summary": "Получение ID пользователя",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Username",
+                        "description": "Имя пользователя",
                         "name": "username",
                         "in": "query",
                         "required": true
@@ -852,7 +852,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/users_transport_http.GetUserIDResponse"
+                            "$ref": "#/definitions/internal_features_user_transport_http.GetUserIDResponse"
                         }
                     },
                     "400": {
@@ -866,15 +866,15 @@ const docTemplate = `{
         },
         "/api/v2/ws": {
             "get": {
-                "description": "Upgrade HTTP to WebSocket for real-time messaging (v2)",
+                "description": "Обновление HTTP до WebSocket для обмена сообщениями в реальном времени (v2)",
                 "tags": [
                     "v2 / WebSocket"
                 ],
-                "summary": "WebSocket connection",
+                "summary": "WebSocket-соединение",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "User ID",
+                        "description": "ID пользователя",
                         "name": "user_id",
                         "in": "query",
                         "required": true
@@ -892,7 +892,55 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "chat_transport_http.AddUserToChatRequest": {
+        "discord_internal_core_domain.Chat": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "discord_internal_core_domain.Messages": {
+            "type": "object",
+            "properties": {
+                "chat_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "sender_id": {
+                    "type": "integer"
+                },
+                "sent_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "discord_internal_core_domain.User": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "reg": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_features_chat_transport_http.AddUserToChatRequest": {
             "type": "object",
             "required": [
                 "users_ids"
@@ -906,7 +954,7 @@ const docTemplate = `{
                 }
             }
         },
-        "chat_transport_http.AddUserToChatResponse": {
+        "internal_features_chat_transport_http.AddUserToChatResponse": {
             "type": "object",
             "properties": {
                 "chat_id": {
@@ -922,7 +970,7 @@ const docTemplate = `{
                 }
             }
         },
-        "chat_transport_http.ChatDTO": {
+        "internal_features_chat_transport_http.ChatDTO": {
             "type": "object",
             "properties": {
                 "id": {
@@ -933,7 +981,7 @@ const docTemplate = `{
                 }
             }
         },
-        "chat_transport_http.GetChatMembersResponse": {
+        "internal_features_chat_transport_http.GetChatMembersResponse": {
             "type": "object",
             "properties": {
                 "members": {
@@ -944,29 +992,29 @@ const docTemplate = `{
                 }
             }
         },
-        "chat_transport_http.GetChatMessagesResponse": {
+        "internal_features_chat_transport_http.GetChatMessagesResponse": {
             "type": "object",
             "properties": {
                 "messages": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/chat_transport_http.MessageDTO"
+                        "$ref": "#/definitions/internal_features_chat_transport_http.MessageDTO"
                     }
                 }
             }
         },
-        "chat_transport_http.GetUserChatsResponse": {
+        "internal_features_chat_transport_http.GetUserChatsResponse": {
             "type": "object",
             "properties": {
                 "chats": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/chat_transport_http.ChatDTO"
+                        "$ref": "#/definitions/internal_features_chat_transport_http.ChatDTO"
                     }
                 }
             }
         },
-        "chat_transport_http.MessageDTO": {
+        "internal_features_chat_transport_http.MessageDTO": {
             "type": "object",
             "properties": {
                 "message": {
@@ -980,7 +1028,7 @@ const docTemplate = `{
                 }
             }
         },
-        "chat_transport_http.SaveChatRequest": {
+        "internal_features_chat_transport_http.SaveChatRequest": {
             "type": "object",
             "required": [
                 "author",
@@ -999,7 +1047,7 @@ const docTemplate = `{
                 }
             }
         },
-        "chat_transport_http.SaveChatResponse": {
+        "internal_features_chat_transport_http.SaveChatResponse": {
             "type": "object",
             "properties": {
                 "chat_id": {
@@ -1007,7 +1055,7 @@ const docTemplate = `{
                 }
             }
         },
-        "chat_transport_http.SaveMessageRequest": {
+        "internal_features_chat_transport_http.SaveMessageRequest": {
             "type": "object",
             "required": [
                 "chat_id",
@@ -1026,55 +1074,7 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.Chat": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "domain.Messages": {
-            "type": "object",
-            "properties": {
-                "chat_id": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "sender_id": {
-                    "type": "integer"
-                },
-                "sent_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "domain.User": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "password": {
-                    "type": "string"
-                },
-                "reg": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "files_transport_http.UploadAvatarResponse": {
+        "internal_features_files_transport_http.UploadAvatarResponse": {
             "type": "object",
             "properties": {
                 "file_id": {
@@ -1082,7 +1082,7 @@ const docTemplate = `{
                 }
             }
         },
-        "users_transport_http.GetUserIDResponse": {
+        "internal_features_user_transport_http.GetUserIDResponse": {
             "type": "object",
             "properties": {
                 "user_id": {
@@ -1090,7 +1090,7 @@ const docTemplate = `{
                 }
             }
         },
-        "users_transport_http.GetUserResponse": {
+        "internal_features_user_transport_http.GetUserResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -1104,7 +1104,7 @@ const docTemplate = `{
                 }
             }
         },
-        "users_transport_http.SaveUserRequest": {
+        "internal_features_user_transport_http.SaveUserRequest": {
             "type": "object",
             "required": [
                 "username"
@@ -1121,7 +1121,7 @@ const docTemplate = `{
                 }
             }
         },
-        "users_transport_http.SaveUserResponse": {
+        "internal_features_user_transport_http.SaveUserResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -1142,10 +1142,10 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "",
-	BasePath:         "/api/v2",
+	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "Discord API",
-	Description:      "Messenger / chat application API (v1 legacy + v2 feature-based)",
+	Description:      "API мессенджер / чат-приложение (v1 legacy + v2 feature-based)",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

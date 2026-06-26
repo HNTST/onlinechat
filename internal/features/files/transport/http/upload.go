@@ -14,13 +14,13 @@ type UploadAvatarResponse struct {
 
 // UploadAvatar uploads an avatar image for a user
 //
-//	@Summary		Upload avatar
-//	@Description	Upload a user avatar file to MinIO and save metadata
-//	@Tags			v2 / Files
+//	@Summary		Загрузка аватара
+//	@Description	Загрузка файла аватара пользователя в MinIO и сохранение метаданных
+//	@Tags			v2 / Файлы
 //	@Accept			mpfd
 //	@Produce		json
-//	@Param			user_id			query		int		true	"User ID"
-//	@Param			new_user_avatar	formData	file	true	"Avatar image file"
+//	@Param			user_id			query		int		true	"ID пользователя"
+//	@Param			new_user_avatar	formData	file	true	"Файл изображения аватара"
 //	@Success		201				{object}	UploadAvatarResponse
 //	@Failure		400				{object}	object{}
 //	@Router			/api/v2/user/avatar [post]

@@ -1,6 +1,37 @@
-basePath: /api/v2
+basePath: /
 definitions:
-  chat_transport_http.AddUserToChatRequest:
+  discord_internal_core_domain.Chat:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  discord_internal_core_domain.Messages:
+    properties:
+      chat_id:
+        type: integer
+      id:
+        type: integer
+      message:
+        type: string
+      sender_id:
+        type: integer
+      sent_at:
+        type: string
+    type: object
+  discord_internal_core_domain.User:
+    properties:
+      id:
+        type: integer
+      password:
+        type: string
+      reg:
+        type: string
+      username:
+        type: string
+    type: object
+  internal_features_chat_transport_http.AddUserToChatRequest:
     properties:
       users_ids:
         items:
@@ -9,7 +40,7 @@ definitions:
     required:
     - users_ids
     type: object
-  chat_transport_http.AddUserToChatResponse:
+  internal_features_chat_transport_http.AddUserToChatResponse:
     properties:
       chat_id:
         format: int64
@@ -20,35 +51,35 @@ definitions:
           type: integer
         type: array
     type: object
-  chat_transport_http.ChatDTO:
+  internal_features_chat_transport_http.ChatDTO:
     properties:
       id:
         type: integer
       name:
         type: string
     type: object
-  chat_transport_http.GetChatMembersResponse:
+  internal_features_chat_transport_http.GetChatMembersResponse:
     properties:
       members:
         items:
           type: integer
         type: array
     type: object
-  chat_transport_http.GetChatMessagesResponse:
+  internal_features_chat_transport_http.GetChatMessagesResponse:
     properties:
       messages:
         items:
-          $ref: '#/definitions/chat_transport_http.MessageDTO'
+          $ref: '#/definitions/internal_features_chat_transport_http.MessageDTO'
         type: array
     type: object
-  chat_transport_http.GetUserChatsResponse:
+  internal_features_chat_transport_http.GetUserChatsResponse:
     properties:
       chats:
         items:
-          $ref: '#/definitions/chat_transport_http.ChatDTO'
+          $ref: '#/definitions/internal_features_chat_transport_http.ChatDTO'
         type: array
     type: object
-  chat_transport_http.MessageDTO:
+  internal_features_chat_transport_http.MessageDTO:
     properties:
       message:
         type: string
@@ -57,7 +88,7 @@ definitions:
       sent_at:
         type: string
     type: object
-  chat_transport_http.SaveChatRequest:
+  internal_features_chat_transport_http.SaveChatRequest:
     properties:
       author:
         type: integer
@@ -70,12 +101,12 @@ definitions:
     - chat_name
     - target_user
     type: object
-  chat_transport_http.SaveChatResponse:
+  internal_features_chat_transport_http.SaveChatResponse:
     properties:
       chat_id:
         type: integer
     type: object
-  chat_transport_http.SaveMessageRequest:
+  internal_features_chat_transport_http.SaveMessageRequest:
     properties:
       chat_id:
         type: integer
@@ -88,48 +119,17 @@ definitions:
     - message
     - sender_id
     type: object
-  domain.Chat:
-    properties:
-      id:
-        type: integer
-      name:
-        type: string
-    type: object
-  domain.Messages:
-    properties:
-      chat_id:
-        type: integer
-      id:
-        type: integer
-      message:
-        type: string
-      sender_id:
-        type: integer
-      sent_at:
-        type: string
-    type: object
-  domain.User:
-    properties:
-      id:
-        type: integer
-      password:
-        type: string
-      reg:
-        type: string
-      username:
-        type: string
-    type: object
-  files_transport_http.UploadAvatarResponse:
+  internal_features_files_transport_http.UploadAvatarResponse:
     properties:
       file_id:
         type: integer
     type: object
-  users_transport_http.GetUserIDResponse:
+  internal_features_user_transport_http.GetUserIDResponse:
     properties:
       user_id:
         type: integer
     type: object
-  users_transport_http.GetUserResponse:
+  internal_features_user_transport_http.GetUserResponse:
     properties:
       id:
         type: integer
@@ -138,7 +138,7 @@ definitions:
       username:
         type: string
     type: object
-  users_transport_http.SaveUserRequest:
+  internal_features_user_transport_http.SaveUserRequest:
     properties:
       password:
         description: Временно не обязательный
@@ -150,7 +150,7 @@ definitions:
     required:
     - username
     type: object
-  users_transport_http.SaveUserResponse:
+  internal_features_user_transport_http.SaveUserResponse:
     properties:
       id:
         type: integer
@@ -161,7 +161,7 @@ definitions:
     type: object
 info:
   contact: {}
-  description: Messenger / chat application API (v1 legacy + v2 feature-based)
+  description: API мессенджер / чат-приложение (v1 legacy + v2 feature-based)
   title: Discord API
   version: "1.0"
 paths:
@@ -169,9 +169,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create a new chat with two participants
+      description: Создание нового чата с двумя участниками
       parameters:
-      - description: Chat data
+      - description: Данные чата
         in: body
         name: request
         required: true
@@ -201,16 +201,16 @@ paths:
           description: Bad Request
           schema:
             type: object
-      summary: Create chat
+      summary: Создание чата
       tags:
-      - v1 / Chat
+      - v1 / Чаты
   /api/v1/chats:
     get:
       consumes:
       - application/json
-      description: Get all chats that a user is a member of
+      description: Получение всех чатов, в которых состоит пользователь
       parameters:
-      - description: User ID
+      - description: ID пользователя
         in: query
         name: user_id
         required: true
@@ -222,22 +222,22 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/domain.Chat'
+              $ref: '#/definitions/discord_internal_core_domain.Chat'
             type: array
         "400":
           description: Bad Request
           schema:
             type: object
-      summary: Get user chats
+      summary: Чаты пользователя
       tags:
-      - v1 / Chat
+      - v1 / Чаты
   /api/v1/chats/add_user:
     post:
       consumes:
       - application/json
-      description: Add a user to an existing chat by chat ID
+      description: Добавление пользователя в существующий чат по ID чата
       parameters:
-      - description: Add user data
+      - description: Данные для добавления
         in: body
         name: request
         required: true
@@ -261,16 +261,16 @@ paths:
           description: Bad Request
           schema:
             type: object
-      summary: Add user to chat
+      summary: Добавление пользователя в чат
       tags:
-      - v1 / Chat
+      - v1 / Чаты
   /api/v1/chats/members:
     get:
       consumes:
       - application/json
-      description: Get all member user IDs for a chat
+      description: Получение ID всех участников чата
       parameters:
-      - description: Chat ID
+      - description: ID чата
         in: query
         name: chat_id
         required: true
@@ -292,16 +292,16 @@ paths:
           description: Bad Request
           schema:
             type: object
-      summary: Get chat members
+      summary: Участники чата
       tags:
-      - v1 / Chat
+      - v1 / Чаты
   /api/v1/messages:
     get:
       consumes:
       - application/json
-      description: Get all messages in a chat
+      description: Получение всех сообщений в чате
       parameters:
-      - description: Chat ID
+      - description: ID чата
         in: query
         name: chat_id
         required: true
@@ -313,22 +313,22 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/domain.Messages'
+              $ref: '#/definitions/discord_internal_core_domain.Messages'
             type: array
         "400":
           description: Bad Request
           schema:
             type: object
-      summary: Get chat messages
+      summary: Сообщения чата
       tags:
-      - v1 / Chat
+      - v1 / Чаты
   /api/v1/user:
     get:
       consumes:
       - application/json
-      description: Get user details by user ID
+      description: Получение данных пользователя по его ID
       parameters:
-      - description: User ID
+      - description: ID пользователя
         in: query
         name: user_id
         required: true
@@ -339,20 +339,20 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/domain.User'
+            $ref: '#/definitions/discord_internal_core_domain.User'
         "400":
           description: Bad Request
           schema:
             type: object
-      summary: Get user
+      summary: Получение пользователя
       tags:
-      - v1 / User
+      - v1 / Пользователи
     post:
       consumes:
       - application/json
-      description: Create a new user account
+      description: Создание новой учётной записи пользователя
       parameters:
-      - description: Registration data
+      - description: Данные для регистрации
         in: body
         name: request
         required: true
@@ -378,21 +378,21 @@ paths:
           description: Bad Request
           schema:
             type: object
-      summary: Register user
+      summary: Регистрация пользователя
       tags:
-      - v1 / User
+      - v1 / Пользователи
   /api/v1/user/avatar:
     post:
       consumes:
       - multipart/form-data
-      description: Upload a user avatar file to MinIO and save metadata
+      description: Загрузка файла аватара пользователя в MinIO и сохранение метаданных
       parameters:
-      - description: User ID
+      - description: ID пользователя
         in: query
         name: user_id
         required: true
         type: integer
-      - description: Avatar image file
+      - description: Файл изображения аватара
         in: formData
         name: new_user_avatar
         required: true
@@ -412,16 +412,16 @@ paths:
           description: Bad Request
           schema:
             type: object
-      summary: Upload avatar
+      summary: Загрузка аватара
       tags:
-      - v1 / Files
+      - v1 / Файлы
   /api/v1/user_id:
     get:
       consumes:
       - application/json
-      description: Get user ID by username
+      description: Получение ID пользователя по его имени
       parameters:
-      - description: Username
+      - description: Имя пользователя
         in: query
         name: username
         required: true
@@ -441,14 +441,15 @@ paths:
           description: Bad Request
           schema:
             type: object
-      summary: Get user ID
+      summary: Получение ID пользователя
       tags:
-      - v1 / User
+      - v1 / Пользователи
   /api/v1/ws:
     get:
-      description: Upgrade HTTP to WebSocket for real-time messaging
+      description: Обновление HTTP до WebSocket для обмена сообщениями в реальном
+        времени
       parameters:
-      - description: User ID
+      - description: ID пользователя
         in: query
         name: user_id
         required: true
@@ -458,78 +459,78 @@ paths:
           description: Switching Protocols
           schema:
             type: object
-      summary: WebSocket connection
+      summary: WebSocket-соединение
       tags:
       - v1 / WebSocket
   /api/v2/chat:
     post:
       consumes:
       - application/json
-      description: Create a new chat with two participants
+      description: Создание нового чата с двумя участниками
       parameters:
-      - description: Chat data
+      - description: Данные чата
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/chat_transport_http.SaveChatRequest'
+          $ref: '#/definitions/internal_features_chat_transport_http.SaveChatRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/chat_transport_http.SaveChatResponse'
+            $ref: '#/definitions/internal_features_chat_transport_http.SaveChatResponse'
         "400":
           description: Bad Request
           schema:
             type: object
-      summary: Create chat
+      summary: Создание чата
       tags:
-      - v2 / Chat
+      - v2 / Чаты
   /api/v2/chat/{chat_id}/members:
     post:
       consumes:
       - application/json
-      description: Add users to an existing chat by chat ID
+      description: Добавление пользователей в существующий чат по его ID
       parameters:
-      - description: Chat ID
-        in: query
+      - description: ID чата
+        in: path
         name: chat_id
         required: true
         type: integer
-      - description: Users IDs
+      - description: ID пользователей
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/chat_transport_http.AddUserToChatRequest'
+          $ref: '#/definitions/internal_features_chat_transport_http.AddUserToChatRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/chat_transport_http.AddUserToChatResponse'
+            $ref: '#/definitions/internal_features_chat_transport_http.AddUserToChatResponse'
         "400":
           description: Bad Request
           schema:
             type: object
-      summary: Add users to chat
+      summary: Добавление пользователей в чат
       tags:
-      - v2 / Chat
+      - v2 / Чаты
   /api/v2/chat/message:
     post:
       consumes:
       - application/json
-      description: Send a message to a chat
+      description: Отправка сообщения в чат
       parameters:
-      - description: Message data
+      - description: Данные сообщения
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/chat_transport_http.SaveMessageRequest'
+          $ref: '#/definitions/internal_features_chat_transport_http.SaveMessageRequest'
       produces:
       - application/json
       responses:
@@ -541,16 +542,16 @@ paths:
           description: Bad Request
           schema:
             type: object
-      summary: Send message
+      summary: Отправка сообщения
       tags:
-      - v2 / Chat
+      - v2 / Чаты
   /api/v2/chats:
     get:
       consumes:
       - application/json
-      description: Get all chats that a user is a member of
+      description: Получение всех чатов, в которых состоит пользователь
       parameters:
-      - description: User ID
+      - description: ID пользователя
         in: query
         name: user_id
         required: true
@@ -561,21 +562,21 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/chat_transport_http.GetUserChatsResponse'
+            $ref: '#/definitions/internal_features_chat_transport_http.GetUserChatsResponse'
         "400":
           description: Bad Request
           schema:
             type: object
-      summary: Get user chats
+      summary: Чаты пользователя
       tags:
-      - v2 / Chat
+      - v2 / Чаты
   /api/v2/chats/members:
     get:
       consumes:
       - application/json
-      description: Get all member user IDs for a chat
+      description: Получение ID всех участников чата
       parameters:
-      - description: Chat ID
+      - description: ID чата
         in: query
         name: chat_id
         required: true
@@ -586,21 +587,21 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/chat_transport_http.GetChatMembersResponse'
+            $ref: '#/definitions/internal_features_chat_transport_http.GetChatMembersResponse'
         "400":
           description: Bad Request
           schema:
             type: object
-      summary: Get chat members
+      summary: Участники чата
       tags:
-      - v2 / Chat
+      - v2 / Чаты
   /api/v2/messages:
     get:
       consumes:
       - application/json
-      description: Get all messages in a chat
+      description: Получение всех сообщений в чате
       parameters:
-      - description: Chat ID
+      - description: ID чата
         in: query
         name: chat_id
         required: true
@@ -611,21 +612,21 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/chat_transport_http.GetChatMessagesResponse'
+            $ref: '#/definitions/internal_features_chat_transport_http.GetChatMessagesResponse'
         "400":
           description: Bad Request
           schema:
             type: object
-      summary: Get chat messages
+      summary: Сообщения чата
       tags:
-      - v2 / Chat
+      - v2 / Чаты
   /api/v2/user:
     get:
       consumes:
       - application/json
-      description: Get user details by user ID
+      description: Получение данных пользователя по его ID
       parameters:
-      - description: User ID
+      - description: ID пользователя
         in: query
         name: user_id
         required: true
@@ -636,51 +637,51 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/users_transport_http.GetUserResponse'
+            $ref: '#/definitions/internal_features_user_transport_http.GetUserResponse'
         "400":
           description: Bad Request
           schema:
             type: object
-      summary: Get user
+      summary: Получение пользователя
       tags:
-      - v2 / User
+      - v2 / Пользователи
     post:
       consumes:
       - application/json
-      description: Create a new user account
+      description: Создание новой учётной записи пользователя
       parameters:
-      - description: Registration data
+      - description: Данные для регистрации
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/users_transport_http.SaveUserRequest'
+          $ref: '#/definitions/internal_features_user_transport_http.SaveUserRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/users_transport_http.SaveUserResponse'
+            $ref: '#/definitions/internal_features_user_transport_http.SaveUserResponse'
         "400":
           description: Bad Request
           schema:
             type: object
-      summary: Register user
+      summary: Регистрация пользователя
       tags:
-      - v2 / User
+      - v2 / Пользователи
   /api/v2/user/avatar:
     post:
       consumes:
       - multipart/form-data
-      description: Upload a user avatar file to MinIO and save metadata
+      description: Загрузка файла аватара пользователя в MinIO и сохранение метаданных
       parameters:
-      - description: User ID
+      - description: ID пользователя
         in: query
         name: user_id
         required: true
         type: integer
-      - description: Avatar image file
+      - description: Файл изображения аватара
         in: formData
         name: new_user_avatar
         required: true
@@ -691,21 +692,21 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/files_transport_http.UploadAvatarResponse'
+            $ref: '#/definitions/internal_features_files_transport_http.UploadAvatarResponse'
         "400":
           description: Bad Request
           schema:
             type: object
-      summary: Upload avatar
+      summary: Загрузка аватара
       tags:
-      - v2 / Files
+      - v2 / Файлы
   /api/v2/user_id:
     get:
       consumes:
       - application/json
-      description: Get user ID by username
+      description: Получение ID пользователя по его имени
       parameters:
-      - description: Username
+      - description: Имя пользователя
         in: query
         name: username
         required: true
@@ -716,19 +717,20 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/users_transport_http.GetUserIDResponse'
+            $ref: '#/definitions/internal_features_user_transport_http.GetUserIDResponse'
         "400":
           description: Bad Request
           schema:
             type: object
-      summary: Get user ID
+      summary: Получение ID пользователя
       tags:
-      - v2 / User
+      - v2 / Пользователи
   /api/v2/ws:
     get:
-      description: Upgrade HTTP to WebSocket for real-time messaging (v2)
+      description: Обновление HTTP до WebSocket для обмена сообщениями в реальном
+        времени (v2)
       parameters:
-      - description: User ID
+      - description: ID пользователя
         in: query
         name: user_id
         required: true
@@ -738,7 +740,7 @@ paths:
           description: Switching Protocols
           schema:
             type: object
-      summary: WebSocket connection
+      summary: WebSocket-соединение
       tags:
       - v2 / WebSocket
 swagger: "2.0"

@@ -18,12 +18,12 @@ type SaveChatResponse struct {
 
 // SaveChat creates a new chat
 //
-//	@Summary		Create chat
-//	@Description	Create a new chat with two participants
-//	@Tags			v2 / Chat
+//	@Summary		Создание чата
+//	@Description	Создание нового чата с двумя участниками
+//	@Tags			v2 / Чаты
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		SaveChatRequest	true	"Chat data"
+//	@Param			request	body		SaveChatRequest	true	"Данные чата"
 //	@Success		201		{object}	SaveChatResponse
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v2/chat [post]
