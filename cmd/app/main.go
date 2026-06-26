@@ -1,9 +1,8 @@
+// @title Discord API
+// @version 1.0
+// @description Messenger / chat application API (v1 legacy + v2 feature-based)
+// @BasePath /api/v2
 package main
-
-//	@title			Discord API
-//	@version		1.0
-//	@description	Messenger / chat application API (v1 legacy + v2 feature-based)
-//	@BasePath		/api/v2
 
 import (
 	"context"
@@ -115,7 +114,9 @@ func main() {
 		core_http_server.NewRoute(http.MethodGet, "/ws", chatWSHandler.HandleConnections),
 	)
 
-	httpServer.Handle("/swagger/", httpSwagger.Handler())
+	httpServer.Handle("/swagger/", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/swagger.json"),
+	))
 
 	if err := httpServer.Run(ctx); err != nil {
 		logger.Error("HTTP server run error", "error", err)
