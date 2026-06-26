@@ -8,12 +8,21 @@ import (
 	core_http_middleware "discord/internal/core/transport/middleware"
 	core_http_server "discord/internal/core/transport/server"
 	"discord/internal/delivery"
+	chats_postgres_repository "discord/internal/features/chat/repository/postgres"
+	chat_service "discord/internal/features/chat/service"
+	chat_transport_http "discord/internal/features/chat/transport/http"
+	chat_transport_ws "discord/internal/features/chat/transport/ws"
+	files_postgres_repository "discord/internal/features/files/repository/postgres"
+	files_repository "discord/internal/features/files/repository"
+	files_service "discord/internal/features/files/service"
+	files_transport_http "discord/internal/features/files/transport/http"
 	users_postgres_repository "discord/internal/features/user/repository/postges"
 	users_service "discord/internal/features/user/service"
 	users_transport_http "discord/internal/features/user/transport/http"
 	"discord/internal/repository/minio"
 	"discord/internal/repository/postgres"
 	"discord/internal/service"
+	"net/http"
 	"os/signal"
 	"syscall"
 )
@@ -51,10 +60,30 @@ func main() {
 	apiVersionRouter := core_http_server.NewApiVersionRouter(core_http_server.ApiVersion1)
 	// <--->
 
+	// --- V2 User module ---
 	usersRepo := users_postgres_repository.NewUsersRepository(pgPool)
 	usersService := users_service.NewUsersService(usersRepo)
 	usersTransport := users_transport_http.NewUsersHTTPHandler(usersService)
 	usersRoutes := usersTransport.Routes()
+
+	// --- V2 Chat module ---
+	chatRepo := chats_postgres_repository.NewChatRepository(pgPool)
+	chatService := chat_service.NewChatService(chatRepo)
+	chatTransport := chat_transport_http.NewChatHttpHandler(chatService)
+	chatRoutes := chatTransport.Routes()
+	chatWSHandler := chat_transport_ws.NewChatWSHandler(chatService)
+
+	// --- V2 File module ---
+	filePostgresRepo := files_postgres_repository.NewFileRepository(pgPool)
+	fileStorage, err := files_repository.NewMinioStorage(cfg.Config_Minio)
+	if err != nil {
+		logger.Error("Minio storage init error", "error", err)
+		return
+	}
+	fileService := files_service.NewFileService(filePostgresRepo, fileStorage)
+	fileTransport := files_transport_http.NewFileHTTPHandler(fileService)
+	fileRoutes := fileTransport.Routes()
+
 	apiVersionRouter2 := core_http_server.NewApiVersionRouter(core_http_server.ApiVersion2)
 
 	httpServer := core_http_server.NewHTTPServer(
@@ -74,6 +103,11 @@ func main() {
 
 	httpServer.RegisterAPIRoutes(apiVersionRouter2)
 	apiVersionRouter2.RegisterRoutes(usersRoutes...)
+	apiVersionRouter2.RegisterRoutes(chatRoutes...)
+	apiVersionRouter2.RegisterRoutes(fileRoutes...)
+	apiVersionRouter2.RegisterRoutes(
+		core_http_server.NewRoute(http.MethodGet, "/ws", chatWSHandler.HandleConnections),
+	)
 
 	if err := httpServer.Run(ctx); err != nil {
 		logger.Error("HTTP server run error", "error", err)

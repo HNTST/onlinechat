@@ -116,6 +116,26 @@ func (s *UserRepositoryTestSuite) TestGetUser_NotFound() {
 	s.Require().Error(err)
 }
 
+// --- GetUserID
+
+func (s *UserRepositoryTestSuite) TestGetUserID_Success() {
+	input := domain.NewUserUninitialized("dave", "pass123")
+	input.Reg = time.Now()
+	saved, err := s.repo.SaveUser(context.Background(), input)
+	s.Require().NoError(err)
+
+	id, err := s.repo.GetUserID(context.Background(), "dave")
+
+	s.Require().NoError(err)
+	s.Require().Equal(saved.Id, id)
+}
+
+func (s *UserRepositoryTestSuite) TestGetUserID_NotFound() {
+	_, err := s.repo.GetUserID(context.Background(), "nonexistent")
+
+	s.Require().Error(err)
+}
+
 // --- helpers
 
 func (s *UserRepositoryTestSuite) applyMigrations(ctx context.Context) {

@@ -2,6 +2,7 @@ package chats_postgres_repository_test
 
 import (
 	"context"
+	"discord/internal/core/domain"
 	"fmt"
 	"os"
 	"testing"
@@ -216,6 +217,139 @@ func (s *ChatRepositoryTestSuite) TestAddUserToChat_WithTx() {
 		"SELECT COUNT(*) FROM chat_members WHERE chat_id=$1", chatID).Scan(&count)
 	s.Require().NoError(err)
 	s.Require().Equal(2, count)
+}
+
+// --- GetUserChats
+
+func (s *ChatRepositoryTestSuite) TestGetUserChats_Success() {
+	userID := s.createUser("alice", "pass")
+	otherID := s.createUser("bob", "pass")
+
+	var chat1ID, chat2ID int64
+	err := s.pool.QueryRow(context.Background(),
+		"INSERT INTO chats (name) VALUES('chat-a') RETURNING id").Scan(&chat1ID)
+	s.Require().NoError(err)
+	err = s.pool.QueryRow(context.Background(),
+		"INSERT INTO chats (name) VALUES('chat-b') RETURNING id").Scan(&chat2ID)
+	s.Require().NoError(err)
+
+	_, err = s.pool.Exec(context.Background(),
+		"INSERT INTO chat_members (chat_id, user_id) VALUES($1,$2),($3,$2),($3,$4)",
+		chat1ID, userID, chat2ID, otherID)
+	s.Require().NoError(err)
+
+	chats, err := s.repo.GetUserChats(context.Background(), userID)
+
+	s.Require().NoError(err)
+	s.Require().Len(chats, 2)
+	s.Require().Equal("chat-a", chats[0].Name)
+	s.Require().Equal("chat-b", chats[1].Name)
+}
+
+func (s *ChatRepositoryTestSuite) TestGetUserChats_NoChats() {
+	userID := s.createUser("lonely", "pass")
+
+	chats, err := s.repo.GetUserChats(context.Background(), userID)
+
+	s.Require().NoError(err)
+	s.Require().Empty(chats)
+}
+
+// --- GetChatMessages
+
+func (s *ChatRepositoryTestSuite) TestGetChatMessages_Success() {
+	userID := s.createUser("msg-sender", "pass")
+
+	var chatID int64
+	err := s.pool.QueryRow(context.Background(),
+		"INSERT INTO chats (name) VALUES('msg-chat') RETURNING id").Scan(&chatID)
+	s.Require().NoError(err)
+
+	_, err = s.pool.Exec(context.Background(),
+		"INSERT INTO messages (chat_id, sender_id, message) VALUES($1,$2,'hi'),($1,$2,'there')",
+		chatID, userID)
+	s.Require().NoError(err)
+
+	msgs, err := s.repo.GetChatMessages(context.Background(), chatID)
+
+	s.Require().NoError(err)
+	s.Require().Len(msgs, 2)
+	s.Require().Equal("hi", msgs[0].Message)
+	s.Require().Equal("there", msgs[1].Message)
+}
+
+func (s *ChatRepositoryTestSuite) TestGetChatMessages_NoMessages() {
+	var chatID int64
+	err := s.pool.QueryRow(context.Background(),
+		"INSERT INTO chats (name) VALUES('empty-chat') RETURNING id").Scan(&chatID)
+	s.Require().NoError(err)
+
+	msgs, err := s.repo.GetChatMessages(context.Background(), chatID)
+
+	s.Require().NoError(err)
+	s.Require().Empty(msgs)
+}
+
+// --- GetChatMembers
+
+func (s *ChatRepositoryTestSuite) TestGetChatMembers_Success() {
+	user1ID := s.createUser("member1", "pass")
+	user2ID := s.createUser("member2", "pass")
+
+	var chatID int64
+	err := s.pool.QueryRow(context.Background(),
+		"INSERT INTO chats (name) VALUES('member-chat') RETURNING id").Scan(&chatID)
+	s.Require().NoError(err)
+
+	_, err = s.pool.Exec(context.Background(),
+		"INSERT INTO chat_members (chat_id, user_id) VALUES($1,$2),($1,$3)",
+		chatID, user1ID, user2ID)
+	s.Require().NoError(err)
+
+	members, err := s.repo.GetChatMembers(context.Background(), chatID)
+
+	s.Require().NoError(err)
+	s.Require().Len(members, 2)
+	s.Require().Equal(user1ID, members[0])
+	s.Require().Equal(user2ID, members[1])
+}
+
+func (s *ChatRepositoryTestSuite) TestGetChatMembers_NoMembers() {
+	var chatID int64
+	err := s.pool.QueryRow(context.Background(),
+		"INSERT INTO chats (name) VALUES('lonely-chat') RETURNING id").Scan(&chatID)
+	s.Require().NoError(err)
+
+	members, err := s.repo.GetChatMembers(context.Background(), chatID)
+
+	s.Require().NoError(err)
+	s.Require().Empty(members)
+}
+
+// --- SaveMessage
+
+func (s *ChatRepositoryTestSuite) TestSaveMessage_Success() {
+	userID := s.createUser("sender", "pass")
+
+	var chatID int64
+	err := s.pool.QueryRow(context.Background(),
+		"INSERT INTO chats (name) VALUES('save-msg-chat') RETURNING id").Scan(&chatID)
+	s.Require().NoError(err)
+
+	msg := domain.Messages{
+		ChatId:   chatID,
+		SenderId: userID,
+		Message:  "hello world",
+	}
+	err = s.repo.SaveMessage(context.Background(), msg)
+
+	s.Require().NoError(err)
+
+	var count int
+	err = s.pool.QueryRow(context.Background(),
+		"SELECT COUNT(*) FROM messages WHERE chat_id=$1", chatID).Scan(&count)
+	s.Require().NoError(err)
+	s.Require().Equal(1, count)
 }
 
 // --- helpers

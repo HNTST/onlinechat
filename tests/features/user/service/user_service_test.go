@@ -27,6 +27,11 @@ func (m *mockUserRepo) GetUser(ctx context.Context, userID int64) (domain.User, 
 	return args.Get(0).(domain.User), args.Error(1)
 }
 
+func (m *mockUserRepo) GetUserID(ctx context.Context, username string) (int64, error) {
+	args := m.Called(ctx, username)
+	return args.Get(0).(int64), args.Error(1)
+}
+
 func TestSaveUser_Success(t *testing.T) {
 	mockRepo := new(mockUserRepo)
 	svc := users_service.NewUsersService(mockRepo)
@@ -117,6 +122,33 @@ func TestGetUser_RepoError(t *testing.T) {
 	mockRepo.On("GetUser", ctx, int64(99)).Return(domain.User{}, errors.New("not found"))
 
 	_, err := svc.GetUser(ctx, &userID)
+
+	require.Error(t, err)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestGetUserID_Success(t *testing.T) {
+	mockRepo := new(mockUserRepo)
+	svc := users_service.NewUsersService(mockRepo)
+	ctx := context.Background()
+
+	mockRepo.On("GetUserID", ctx, "alice").Return(int64(42), nil)
+
+	id, err := svc.GetUserID(ctx, "alice")
+
+	require.NoError(t, err)
+	require.Equal(t, int64(42), id)
+	mockRepo.AssertExpectations(t)
+}
+
+func TestGetUserID_NotFound(t *testing.T) {
+	mockRepo := new(mockUserRepo)
+	svc := users_service.NewUsersService(mockRepo)
+	ctx := context.Background()
+
+	mockRepo.On("GetUserID", ctx, "nonexistent").Return(int64(0), errors.New("user not found"))
+
+	_, err := svc.GetUserID(ctx, "nonexistent")
 
 	require.Error(t, err)
 	mockRepo.AssertExpectations(t)
