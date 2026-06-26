@@ -16,6 +16,17 @@ type SaveChatResponse struct {
 	Id int64 `json:"chat_id"`
 }
 
+// SaveChat creates a new chat
+//
+//	@Summary		Create chat
+//	@Description	Create a new chat with two participants
+//	@Tags			v2 / Chat
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		SaveChatRequest	true	"Chat data"
+//	@Success		201		{object}	SaveChatResponse
+//	@Failure		400		{object}	object{}
+//	@Router			/api/v2/chat [post]
 func (h *ChatHttpHandler) SaveChat(
 	w http.ResponseWriter,
 	r *http.Request,

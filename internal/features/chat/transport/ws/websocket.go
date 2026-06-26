@@ -37,6 +37,14 @@ func NewChatWSHandler(chatService ChatService) *ChatWSHandler {
 	}
 }
 
+// HandleConnections upgrades to WebSocket
+//
+//	@Summary		WebSocket connection
+//	@Description	Upgrade HTTP to WebSocket for real-time messaging (v2)
+//	@Tags			v2 / WebSocket
+//	@Param			user_id	query	int	true	"User ID"
+//	@Success		101		{object}	object{}
+//	@Router			/api/v2/ws [get]
 func (h *ChatWSHandler) HandleConnections(w http.ResponseWriter, r *http.Request) {
 	uidStr := r.URL.Query().Get("user_id")
 	userID, err := strconv.Atoi(uidStr)

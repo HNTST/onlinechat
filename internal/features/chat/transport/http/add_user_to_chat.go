@@ -16,6 +16,18 @@ type AddUserToChatResponse struct {
 	Users_ids []int64
 }
 
+// AddUserToChat adds users to an existing chat
+//
+//	@Summary		Add users to chat
+//	@Description	Add users to an existing chat by chat ID
+//	@Tags			v2 / Chat
+//	@Accept			json
+//	@Produce		json
+//	@Param			chat_id	query		int					true	"Chat ID"
+//	@Param			request	body		AddUserToChatRequest	true	"Users IDs"
+//	@Success		200		{object}	AddUserToChatResponse
+//	@Failure		400		{object}	object{}
+//	@Router			/api/v2/chat/{chat_id}/members [post]
 func (h *ChatHttpHandler) AddUserToChat(
 	w http.ResponseWriter,
 	r *http.Request,

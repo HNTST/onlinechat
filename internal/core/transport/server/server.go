@@ -28,6 +28,10 @@ func NewHTTPServer(cfg core_config.Config_Server, log *core_logger.Logger, middl
 	}
 }
 
+func (h *HTTPServer) Handle(pattern string, handler http.Handler) {
+	h.mux.Handle(pattern, handler)
+}
+
 func (h *HTTPServer) RegisterAPIRoutes(routes ...*APIVersionRouter) {
 	for _, router := range routes {
 		prefix := "/api/" + string(router.apiVersion)

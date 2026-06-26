@@ -14,6 +14,17 @@ type SaveUserRequest struct {
 }
 type SaveUserResponse UserDTOResponse
 
+// SaveUser creates a new user
+//
+//	@Summary		Register user
+//	@Description	Create a new user account
+//	@Tags			v2 / User
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		SaveUserRequest	true	"Registration data"
+//	@Success		201		{object}	SaveUserResponse
+//	@Failure		400		{object}	object{}
+//	@Router			/api/v2/user [post]
 func (h *UsersHTTPHandler) SaveUser(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

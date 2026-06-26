@@ -12,6 +12,18 @@ type UploadAvatarResponse struct {
 	Id int64 `json:"file_id"`
 }
 
+// UploadAvatar uploads an avatar image for a user
+//
+//	@Summary		Upload avatar
+//	@Description	Upload a user avatar file to MinIO and save metadata
+//	@Tags			v2 / Files
+//	@Accept			mpfd
+//	@Produce		json
+//	@Param			user_id			query		int		true	"User ID"
+//	@Param			new_user_avatar	formData	file	true	"Avatar image file"
+//	@Success		201				{object}	UploadAvatarResponse
+//	@Failure		400				{object}	object{}
+//	@Router			/api/v2/user/avatar [post]
 func (h *FileHTTPHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

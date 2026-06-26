@@ -15,6 +15,17 @@ type ChatDTO struct {
 	Name string `json:"name"`
 }
 
+// GetUserChats returns all chats for a user
+//
+//	@Summary		Get user chats
+//	@Description	Get all chats that a user is a member of
+//	@Tags			v2 / Chat
+//	@Accept			json
+//	@Produce		json
+//	@Param			user_id	query		int	true	"User ID"
+//	@Success		200		{object}	GetUserChatsResponse
+//	@Failure		400		{object}	object{}
+//	@Router			/api/v2/chats [get]
 func (h *ChatHttpHandler) GetUserChats(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

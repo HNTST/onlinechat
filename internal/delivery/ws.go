@@ -18,6 +18,14 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+// HandleConnections upgrades to WebSocket
+//
+//	@Summary		WebSocket connection
+//	@Description	Upgrade HTTP to WebSocket for real-time messaging
+//	@Tags			v1 / WebSocket
+//	@Param			user_id	query	int	true	"User ID"
+//	@Success		101		{object}	object{}
+//	@Router			/api/v1/ws [get]
 func (sv *OLD_SERVER_HANDLERS) HandleConnections(w http.ResponseWriter, r *http.Request) {
 	uidStr := r.URL.Query().Get("user_id")
 	userID, err := strconv.Atoi(uidStr)

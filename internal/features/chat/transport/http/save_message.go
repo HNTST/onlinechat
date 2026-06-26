@@ -15,6 +15,17 @@ type SaveMessageRequest struct {
 	Message  string `json:"message" validate:"required"`
 }
 
+// SaveMessage creates a new message in a chat
+//
+//	@Summary		Send message
+//	@Description	Send a message to a chat
+//	@Tags			v2 / Chat
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		SaveMessageRequest	true	"Message data"
+//	@Success		201		{object}	object{}
+//	@Failure		400		{object}	object{}
+//	@Router			/api/v2/chat/message [post]
 func (h *ChatHttpHandler) SaveMessage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

@@ -12,6 +12,17 @@ type GetUserIDResponse struct {
 	Id int64 `json:"user_id"`
 }
 
+// GetUserID returns a user ID by username
+//
+//	@Summary		Get user ID
+//	@Description	Get user ID by username
+//	@Tags			v2 / User
+//	@Accept			json
+//	@Produce		json
+//	@Param			username	query		string	true	"Username"
+//	@Success		200			{object}	GetUserIDResponse
+//	@Failure		400			{object}	object{}
+//	@Router			/api/v2/user_id [get]
 func (h *UsersHTTPHandler) GetUserID(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

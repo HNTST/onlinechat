@@ -92,6 +92,17 @@ func (h *OLD_SERVER_HANDLERS) Routes() []core_http_server.Route {
 	}
 }
 
+// SaveUser creates a new user
+//
+//	@Summary		Register user
+//	@Description	Create a new user account
+//	@Tags			v1 / User
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		object{username=string,password=string}	true	"Registration data"
+//	@Success		201		{object}	object{user_id=int64}
+//	@Failure		400		{object}	object{}
+//	@Router			/api/v1/user [post]
 func (sv *OLD_SERVER_HANDLERS) SaveUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
@@ -131,6 +142,17 @@ func (sv *OLD_SERVER_HANDLERS) SaveUser(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// SaveChat creates a new chat
+//
+//	@Summary		Create chat
+//	@Description	Create a new chat with two participants
+//	@Tags			v1 / Chat
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		object{chat_name=string,author=int64,target_user=int64}	true	"Chat data"
+//	@Success		201		{object}	object{chat_id=int64}
+//	@Failure		400		{object}	object{}
+//	@Router			/api/v1/chat [post]
 func (sv *OLD_SERVER_HANDLERS) SaveChat(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
@@ -167,6 +189,18 @@ func (sv *OLD_SERVER_HANDLERS) SaveChat(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// UpdateUserAvatar uploads an avatar image for a user
+//
+//	@Summary		Upload avatar
+//	@Description	Upload a user avatar file to MinIO and save metadata
+//	@Tags			v1 / Files
+//	@Accept			mpfd
+//	@Produce		json
+//	@Param			user_id			query		int		true	"User ID"
+//	@Param			new_user_avatar	formData	file	true	"Avatar image file"
+//	@Success		201				{object}	object{file_id=int64}
+//	@Failure		400				{object}	object{}
+//	@Router			/api/v1/user/avatar [post]
 func (sv *OLD_SERVER_HANDLERS) UpdateUserAvatar(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
@@ -208,6 +242,17 @@ func (sv *OLD_SERVER_HANDLERS) UpdateUserAvatar(w http.ResponseWriter, r *http.R
 	}
 }
 
+// AddUserToChat adds a user to an existing chat
+//
+//	@Summary		Add user to chat
+//	@Description	Add a user to an existing chat by chat ID
+//	@Tags			v1 / Chat
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		object{chat_id=int64,target_user_id=int64}	true	"Add user data"
+//	@Success		200		{object}	object{}
+//	@Failure		400		{object}	object{}
+//	@Router			/api/v1/chats/add_user [post]
 func (sv *OLD_SERVER_HANDLERS) AddUserToChat(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := r.Context()
@@ -232,7 +277,17 @@ func (sv *OLD_SERVER_HANDLERS) AddUserToChat(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusOK) // 200 — Всё Ок
 }
 
-// --- GET
+// GetUser returns a user by ID
+//
+//	@Summary		Get user
+//	@Description	Get user details by user ID
+//	@Tags			v1 / User
+//	@Accept			json
+//	@Produce		json
+//	@Param			user_id	query		int	true	"User ID"
+//	@Success		200		{object}	domain.User
+//	@Failure		400		{object}	object{}
+//	@Router			/api/v1/user [get]
 func (sv *OLD_SERVER_HANDLERS) GetUser(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
@@ -269,6 +324,17 @@ func (sv *OLD_SERVER_HANDLERS) GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetUserChats returns all chats for a user
+//
+//	@Summary		Get user chats
+//	@Description	Get all chats that a user is a member of
+//	@Tags			v1 / Chat
+//	@Accept			json
+//	@Produce		json
+//	@Param			user_id	query		int	true	"User ID"
+//	@Success		200		{array}		domain.Chat
+//	@Failure		400		{object}	object{}
+//	@Router			/api/v1/chats [get]
 func (sv *OLD_SERVER_HANDLERS) GetUserChats(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	ctx := r.Context()
@@ -301,6 +367,17 @@ func (sv *OLD_SERVER_HANDLERS) GetUserChats(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// GetUserMessages returns messages for a chat
+//
+//	@Summary		Get chat messages
+//	@Description	Get all messages in a chat
+//	@Tags			v1 / Chat
+//	@Accept			json
+//	@Produce		json
+//	@Param			chat_id	query		int	true	"Chat ID"
+//	@Success		200		{array}		domain.Messages
+//	@Failure		400		{object}	object{}
+//	@Router			/api/v1/messages [get]
 func (sv *OLD_SERVER_HANDLERS) GetUserMessages(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
@@ -334,6 +411,17 @@ func (sv *OLD_SERVER_HANDLERS) GetUserMessages(w http.ResponseWriter, r *http.Re
 	}
 }
 
+// GetUserID returns a user ID by username
+//
+//	@Summary		Get user ID
+//	@Description	Get user ID by username
+//	@Tags			v1 / User
+//	@Accept			json
+//	@Produce		json
+//	@Param			username	query		string	true	"Username"
+//	@Success		200			{object}	object{user_id=int64}
+//	@Failure		400			{object}	object{}
+//	@Router			/api/v1/user_id [get]
 func (sv *OLD_SERVER_HANDLERS) GetUserID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
@@ -366,6 +454,17 @@ func (sv *OLD_SERVER_HANDLERS) GetUserID(w http.ResponseWriter, r *http.Request)
 	}
 }
 
+// GetChatMembers returns member IDs for a chat
+//
+//	@Summary		Get chat members
+//	@Description	Get all member user IDs for a chat
+//	@Tags			v1 / Chat
+//	@Accept			json
+//	@Produce		json
+//	@Param			chat_id	query		int	true	"Chat ID"
+//	@Success		200		{object}	object{members=[]int64}
+//	@Failure		400		{object}	object{}
+//	@Router			/api/v1/chats/members [get]
 func (sv *OLD_SERVER_HANDLERS) GetChatMembers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

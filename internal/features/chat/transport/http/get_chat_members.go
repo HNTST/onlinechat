@@ -11,6 +11,17 @@ type GetChatMembersResponse struct {
 	Members []int64 `json:"members"`
 }
 
+// GetChatMembers returns member IDs for a chat
+//
+//	@Summary		Get chat members
+//	@Description	Get all member user IDs for a chat
+//	@Tags			v2 / Chat
+//	@Accept			json
+//	@Produce		json
+//	@Param			chat_id	query		int	true	"Chat ID"
+//	@Success		200		{object}	GetChatMembersResponse
+//	@Failure		400		{object}	object{}
+//	@Router			/api/v2/chats/members [get]
 func (h *ChatHttpHandler) GetChatMembers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)

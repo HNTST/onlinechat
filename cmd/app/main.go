@@ -1,5 +1,10 @@
 package main
 
+//	@title			Discord API
+//	@version		1.0
+//	@description	Messenger / chat application API (v1 legacy + v2 feature-based)
+//	@BasePath		/api/v2
+
 import (
 	"context"
 	core_config "discord/internal/core/config"
@@ -9,6 +14,7 @@ import (
 	core_http_server "discord/internal/core/transport/server"
 	"discord/internal/delivery"
 	chats_postgres_repository "discord/internal/features/chat/repository/postgres"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 	chat_service "discord/internal/features/chat/service"
 	chat_transport_http "discord/internal/features/chat/transport/http"
 	chat_transport_ws "discord/internal/features/chat/transport/ws"
@@ -108,6 +114,8 @@ func main() {
 	apiVersionRouter2.RegisterRoutes(
 		core_http_server.NewRoute(http.MethodGet, "/ws", chatWSHandler.HandleConnections),
 	)
+
+	httpServer.Handle("/swagger/", httpSwagger.Handler())
 
 	if err := httpServer.Run(ctx); err != nil {
 		logger.Error("HTTP server run error", "error", err)

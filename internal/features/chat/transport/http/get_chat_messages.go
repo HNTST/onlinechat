@@ -17,6 +17,17 @@ type MessageDTO struct {
 	SentAt   time.Time `json:"sent_at"`
 }
 
+// GetChatMessages returns messages for a chat
+//
+//	@Summary		Get chat messages
+//	@Description	Get all messages in a chat
+//	@Tags			v2 / Chat
+//	@Accept			json
+//	@Produce		json
+//	@Param			chat_id	query		int	true	"Chat ID"
+//	@Success		200		{object}	GetChatMessagesResponse
+//	@Failure		400		{object}	object{}
+//	@Router			/api/v2/messages [get]
 func (h *ChatHttpHandler) GetChatMessages(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
