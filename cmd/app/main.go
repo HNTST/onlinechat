@@ -21,7 +21,7 @@ import (
 	files_postgres_repository "discord/internal/features/files/repository/postgres"
 	files_service "discord/internal/features/files/service"
 	files_transport_http "discord/internal/features/files/transport/http"
-	users_postgres_repository "discord/internal/features/user/repository/postges"
+	users_postgres_repository "discord/internal/features/user/repository/postgres"
 	users_service "discord/internal/features/user/service"
 	users_transport_http "discord/internal/features/user/transport/http"
 	"discord/internal/repository/minio"

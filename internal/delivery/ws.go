@@ -4,7 +4,6 @@ import (
 	"context"
 	"discord/internal/core/domain"
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -30,24 +29,23 @@ func (sv *OLD_SERVER_HANDLERS) HandleConnections(w http.ResponseWriter, r *http.
 	uidStr := r.URL.Query().Get("user_id")
 	userID, err := strconv.Atoi(uidStr)
 	if err != nil {
-		log.Println("Ошибка: не указан или неверен user_id")
+		sv.logger.Error("Ошибка: не указан или неверен user_id")
 		return
 	}
 	user_id := int64(userID)
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
+		sv.logger.Error("ошибка апгрейда до WebSocket", "error", err)
 		return
 	}
 	defer conn.Close()
 
-	// 2. Регистрируем нового клиента
 	sv.clientsMu.Lock()
 	sv.clients[user_id] = conn
 	sv.clientsMu.Unlock()
 	ctx := r.Context()
 
-	log.Printf("Пользователь %d подключился!\n", userID)
+	sv.logger.Info("Пользователь подключился", "user_id", userID)
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
@@ -68,11 +66,11 @@ func (sv *OLD_SERVER_HANDLERS) ProcessMessage(ctx context.Context, data []byte, 
 	}
 
 	if err := json.Unmarshal(data, &input); err != nil {
-		log.Println("Ошибка парсинга:", err)
+		sv.logger.Error("Ошибка парсинга", "error", err)
 		return
 	}
 	if input.Sender_id != actualSenderID {
-		log.Printf("Внимание! Юзер %d пытается выдать себя за %d", actualSenderID, input.Sender_id)
+		sv.logger.Warn("Попытка выдать себя за другого пользователя", "actual_sender_id", actualSenderID, "fake_sender_id", input.Sender_id)
 		return
 	}
 	m := domain.Messages{
@@ -82,12 +80,12 @@ func (sv *OLD_SERVER_HANDLERS) ProcessMessage(ctx context.Context, data []byte, 
 		Sent_at:  time.Now(),
 	}
 	if err := sv.service.SaveMessage(ctx, m); err != nil {
-		log.Println("Ошибка БД:", err)
+		sv.logger.Error("Ошибка БД", "error", err)
 	}
 
 	membersIDs, err := sv.service.GetChatMembers(ctx, m.ChatId)
 	if err != nil {
-		log.Println("Ошибка получения участников:", err)
+		sv.logger.Error("Ошибка получения участников", "error", err)
 		return
 	}
 	sv.clientsMu.Lock()
@@ -96,7 +94,7 @@ func (sv *OLD_SERVER_HANDLERS) ProcessMessage(ctx context.Context, data []byte, 
 			err := clientConn.WriteJSON(m)
 			// err := clientConn.WriteMessage(websocket.TextMessage, data)
 			if err != nil {
-				log.Printf("Ошибка отправки юзеру %d: %v", id, err)
+				sv.logger.Error("Ошибка отправки юзеру", "user_id", id, "error", err)
 				clientConn.Close()
 				delete(sv.clients, id)
 			}

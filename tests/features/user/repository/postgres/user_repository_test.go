@@ -9,7 +9,7 @@ import (
 
 	"discord/internal/core/domain"
 	core_postgres_pool "discord/internal/core/repository/postgres/pool"
-	users_postgres_repository "discord/internal/features/user/repository/postges"
+	users_postgres_repository "discord/internal/features/user/repository/postgres"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
