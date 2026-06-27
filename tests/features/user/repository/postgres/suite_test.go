@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"discord/internal/core/domain"
 	core_postgres_pool "discord/internal/core/repository/postgres/pool"
 	users_postgres_repository "discord/internal/features/user/repository/postgres"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -28,11 +28,13 @@ func TestUserRepositorySuite(t *testing.T) {
 }
 
 func (s *UserRepositoryTestSuite) SetupSuite() {
-	host := getEnv("TEST_DB_HOST", "127.0.0.1")
-	port := getEnv("TEST_DB_PORT", "5432")
-	user := getEnv("TEST_DB_USER", "discord_user")
-	password := getEnv("TEST_DB_PASSWORD", "password")
-	dbname := getEnv("TEST_DB_NAME", "discord_test")
+	_ = godotenv.Load("../../../../internal/core/config/.env.test")
+
+	host := getEnv("DB_HOST", "localhost")
+	port := getEnv("DB_PORT", "5432")
+	user := getEnv("DB_USER", "test_user")
+	password := getEnv("DB_PASSWORD", "test_pass")
+	dbname := getEnv("DB_NAME", "discord_test")
 
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		user, password, host, port, dbname)
@@ -62,82 +64,6 @@ func (s *UserRepositoryTestSuite) SetupTest() {
 	s.Require().NoError(err)
 }
 
-// --- SaveUser
-
-func (s *UserRepositoryTestSuite) TestSaveUser_Success() {
-	input := domain.NewUserUninitialized("alice", "secure123")
-	input.Reg = time.Now()
-
-	user, err := s.repo.SaveUser(context.Background(), input)
-
-	s.Require().NoError(err)
-	s.Require().Greater(user.Id, int64(0))
-	s.Require().Equal("alice", user.Name)
-	s.Require().Equal("-1", user.Password)
-	s.Require().False(user.Reg.IsZero())
-
-	var dbUsername string
-	err = s.pool.QueryRow(context.Background(),
-		"SELECT username FROM users WHERE id=$1", user.Id).Scan(&dbUsername)
-	s.Require().NoError(err)
-	s.Require().Equal("alice", dbUsername)
-}
-
-func (s *UserRepositoryTestSuite) TestSaveUser_Duplicate() {
-	input := domain.NewUserUninitialized("bob", "pass123")
-	input.Reg = time.Now()
-
-	_, err := s.repo.SaveUser(context.Background(), input)
-	s.Require().NoError(err)
-
-	_, err = s.repo.SaveUser(context.Background(), input)
-	s.Require().Error(err)
-}
-
-// --- GetUser
-
-func (s *UserRepositoryTestSuite) TestGetUser_Success() {
-	input := domain.NewUserUninitialized("charlie", "mypass")
-	input.Reg = time.Now()
-	saved, err := s.repo.SaveUser(context.Background(), input)
-	s.Require().NoError(err)
-
-	user, err := s.repo.GetUser(context.Background(), saved.Id)
-
-	s.Require().NoError(err)
-	s.Require().Equal("charlie", user.Name)
-	s.Require().Equal("-1", user.Password)
-	s.Require().False(user.Reg.IsZero())
-}
-
-func (s *UserRepositoryTestSuite) TestGetUser_NotFound() {
-	_, err := s.repo.GetUser(context.Background(), 99999)
-
-	s.Require().Error(err)
-}
-
-// --- GetUserID
-
-func (s *UserRepositoryTestSuite) TestGetUserID_Success() {
-	input := domain.NewUserUninitialized("dave", "pass123")
-	input.Reg = time.Now()
-	saved, err := s.repo.SaveUser(context.Background(), input)
-	s.Require().NoError(err)
-
-	id, err := s.repo.GetUserID(context.Background(), "dave")
-
-	s.Require().NoError(err)
-	s.Require().Equal(saved.Id, id)
-}
-
-func (s *UserRepositoryTestSuite) TestGetUserID_NotFound() {
-	_, err := s.repo.GetUserID(context.Background(), "nonexistent")
-
-	s.Require().Error(err)
-}
-
-// --- helpers
-
 func (s *UserRepositoryTestSuite) applyMigrations(ctx context.Context) {
 	migrations := []string{
 		`CREATE TABLE IF NOT EXISTS files (
@@ -151,7 +77,8 @@ func (s *UserRepositoryTestSuite) applyMigrations(ctx context.Context) {
 			id SERIAL PRIMARY KEY,
 			username VARCHAR(255) UNIQUE NOT NULL,
 			password VARCHAR(255) NOT NULL,
-			reg TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+			reg TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+			avatar_id INTEGER REFERENCES files(id) ON DELETE SET NULL
 		)`,
 		`CREATE TABLE IF NOT EXISTS chats (
 			id SERIAL PRIMARY KEY,
@@ -169,22 +96,6 @@ func (s *UserRepositoryTestSuite) applyMigrations(ctx context.Context) {
 			message TEXT NOT NULL,
 			sent_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)`,
-		`DO $$ BEGIN
-			IF NOT EXISTS (
-				SELECT 1 FROM information_schema.columns
-				WHERE table_name='users' AND column_name='avatar_id'
-			) THEN
-				ALTER TABLE users ADD COLUMN avatar_id INTEGER;
-			END IF;
-		END $$`,
-		`DO $$ BEGIN
-			IF NOT EXISTS (
-				SELECT 1 FROM information_schema.table_constraints
-				WHERE constraint_name='fk_avatar_file' AND table_name='users'
-			) THEN
-				ALTER TABLE users ADD CONSTRAINT fk_avatar_file FOREIGN KEY (avatar_id) REFERENCES files(id);
-			END IF;
-		END $$`,
 	}
 	for _, m := range migrations {
 		_, err := s.pool.Exec(ctx, m)

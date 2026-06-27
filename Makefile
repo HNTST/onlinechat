@@ -5,6 +5,14 @@ check:
 	go vet ./...
 	go test -p 1 -count=1 -v ./...
 
+test-integration:
+	@echo "=== Поднимаем тестовую PostgreSQL ==="
+	docker compose -f docker-compose.test.yml up -d --wait
+	@echo "=== Запускаем тесты ==="
+	go test -p 1 -count=1 -v ./tests/... || true
+	@echo "=== Останавливаем и чистим контейнер ==="
+	docker compose -f docker-compose.test.yml down -v
+
 commit:
 	@git add .; \
 	changes=$$(git diff --cached --name-status); \

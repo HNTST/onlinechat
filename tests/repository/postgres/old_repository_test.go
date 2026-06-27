@@ -13,6 +13,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -28,11 +29,13 @@ func TestOldRepositorySuite(t *testing.T) {
 }
 
 func (s *OldRepositoryTestSuite) SetupSuite() {
-	host := getEnv("TEST_DB_HOST", "127.0.0.1")
-	port := getEnv("TEST_DB_PORT", "5432")
-	user := getEnv("TEST_DB_USER", "discord_user")
-	password := getEnv("TEST_DB_PASSWORD", "password")
-	dbname := getEnv("TEST_DB_NAME", "discord_test")
+	_ = godotenv.Load("../../../internal/core/config/.env.test")
+
+	host := getEnv("DB_HOST", "localhost")
+	port := getEnv("DB_PORT", "5432")
+	user := getEnv("DB_USER", "test_user")
+	password := getEnv("DB_PASSWORD", "test_pass")
+	dbname := getEnv("DB_NAME", "discord_test")
 
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		user, password, host, port, dbname)
