@@ -23,6 +23,8 @@ func TestSaveChat_CreatesNewChat(t *testing.T) {
 		Return(int64(0), core_errors.ErrChatNotExists)
 	mockRepo.On("CreateNewChat", ctx, "new-chat").
 		Return(int64(42), nil)
+	mockRepo.On("AddUserToChat", ctx, int64(42), []int64{1, 2}).
+		Return(nil)
 
 	chatID, err := svc.SaveChat(ctx, "new-chat", 1, 2)
 

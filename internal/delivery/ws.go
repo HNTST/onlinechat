@@ -43,7 +43,14 @@ func (sv *OLD_SERVER_HANDLERS) HandleConnections(w http.ResponseWriter, r *http.
 	sv.clientsMu.Lock()
 	sv.clients[user_id] = conn
 	sv.clientsMu.Unlock()
-	ctx := r.Context()
+
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
+
+	go func() {
+		<-ctx.Done()
+		conn.Close()
+	}()
 
 	sv.logger.Info("Пользователь подключился", "user_id", userID)
 	for {

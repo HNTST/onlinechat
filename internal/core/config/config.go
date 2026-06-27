@@ -43,27 +43,34 @@ func getEnv(key, fallback string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
 	}
-	log.Printf("%s не найден, использую дефолт: %s", key, fallback)
 	return fallback
+}
+
+func requireEnv(key string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	log.Fatalf("FATAL: обязательная переменная окружения %s не установлена", key)
+	return ""
 }
 
 func Load() *Config {
 	godotenv.Load("internal/core/config/.env")
 	return &Config{
 		Config_DB{
-			Host:     getEnv("DB_HOST", "192.168.31.234"),
+			Host:     getEnv("DB_HOST", "localhost"),
 			Port:     getEnv("DB_PORT", "5432"),
-			User:     getEnv("DB_USER", "discord_user"),
-			Password: getEnv("DB_PASSWORD", "password"),
+			User:     getEnv("DB_USER", "postgres"),
+			Password: requireEnv("DB_PASSWORD"),
 			Name:     getEnv("DB_NAME", "discord"),
 			Sslmode:  getEnv("DB_SSLMODE", "disable"),
 			Timeout:  60 * time.Second,
 		},
 		Config_Minio{
-			Host:         getEnv("MINIO_HOST", "192.168.31.195:9000"),
-			BucketName:   getEnv("MINIO_BUCKET_NAME", "onlinechat"),
-			RootUser:     getEnv("MINIO_ROOT_USER", "admin"),
-			RootPassword: getEnv("MINIO_ROOT_PASSWORD", "password123"),
+			Host:         getEnv("MINIO_HOST", "localhost:9000"),
+			BucketName:   getEnv("MINIO_BUCKET_NAME", "discord-avatars"),
+			RootUser:     getEnv("MINIO_ROOT_USER", "minioadmin"),
+			RootPassword: requireEnv("MINIO_ROOT_PASSWORD"),
 		},
 		Config_Logger{
 			LogLevel: getEnv("LOGGER_LEVEL", "INFO"),

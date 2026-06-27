@@ -41,7 +41,9 @@ func (h *FileHTTPHandler) GetAvatarByID(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", mimeType)
 	w.WriteHeader(http.StatusOK)
-	io.Copy(w, stream)
+	if _, err := io.Copy(w, stream); err != nil {
+		log.Debug("аватарка отправлена не полностью — клиент оборвал соединение", "error", err)
+	}
 }
 
 func getAvatarIDQueryParam(r *http.Request) (*int, error) {

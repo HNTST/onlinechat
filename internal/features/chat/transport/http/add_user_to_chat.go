@@ -1,11 +1,12 @@
 package chat_transport_http
 
 import (
+	core_errors "discord/internal/core/errors"
 	core_logger "discord/internal/core/logger"
 	core_http_request "discord/internal/core/transport/request"
 	core_http_response "discord/internal/core/transport/response"
-	core_http_utils "discord/internal/core/transport/utils"
 	"net/http"
+	"strconv"
 )
 
 type AddUserToChatRequest struct {
@@ -38,12 +39,15 @@ func (h *ChatHttpHandler) AddUserToChat(
 		log,
 		w,
 	)
-	chat_id, err := core_http_utils.GetIntQueryParam(r, "chat_id")
+	chatIDStr := r.PathValue("chat_id")
+	if chatIDStr == "" {
+		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "missing chat_id in path")
+		return
+	}
+	chatID, err := strconv.ParseInt(chatIDStr, 10, 64)
 	if err != nil {
-		responseHandler.ErrorResponse(
-			err,
-			"get query param",
-		)
+		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "invalid chat_id in path")
+		return
 	}
 	var request AddUserToChatRequest
 	if err := core_http_request.DecodeAndValidateRequest(
@@ -58,7 +62,7 @@ func (h *ChatHttpHandler) AddUserToChat(
 	}
 	err = h.chatService.AddUserToChat(
 		ctx,
-		int64(*chat_id),
+		chatID,
 		request.Users_ids,
 	)
 	if err != nil {
@@ -69,7 +73,7 @@ func (h *ChatHttpHandler) AddUserToChat(
 		return
 	}
 	response := AddUserToChatResponse{
-		Chat_id:   int64(*chat_id),
+		Chat_id:   chatID,
 		Users_ids: request.Users_ids,
 	}
 	responseHandler.JSONResponse(response, http.StatusOK)

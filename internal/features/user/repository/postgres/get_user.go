@@ -3,7 +3,11 @@ package users_postgres_repository
 import (
 	"context"
 	"discord/internal/core/domain"
+	core_errors "discord/internal/core/errors"
+	"errors"
 	"fmt"
+
+	"github.com/jackc/pgx/v5"
 )
 
 func (r *UserRepository) GetUser(ctx context.Context, user_id int64) (domain.User, error) {
@@ -24,6 +28,9 @@ func (r *UserRepository) GetUser(ctx context.Context, user_id int64) (domain.Use
 		&userModel.AvatarID,
 	)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.User{}, fmt.Errorf("user not found: %w", core_errors.ErrUserNotFound)
+		}
 		return domain.User{}, fmt.Errorf("scan error: %w", err)
 	}
 	userDomain := domain.NewUserWithAvatar(

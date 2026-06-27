@@ -13,9 +13,17 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
+
+type userV1Response struct {
+	Id       int64     `json:"id"`
+	Name     string    `json:"username"`
+	Reg      time.Time `json:"reg"`
+	AvatarID *int64    `json:"avatar_id,omitempty"`
+}
 
 type OLD_SERVER_HANDLERS struct {
 	service   Service
@@ -316,8 +324,14 @@ func (sv *OLD_SERVER_HANDLERS) GetUser(w http.ResponseWriter, r *http.Request) {
 		responseHandler.ErrorResponse(err, "failed to get user")
 		return
 	}
-	w.WriteHeader(http.StatusOK) // 200 — Всё Ок
-	err = json.NewEncoder(w).Encode(user)
+	w.WriteHeader(http.StatusOK)
+	resp := userV1Response{
+		Id:       user.Id,
+		Name:     user.Name,
+		Reg:      user.Reg,
+		AvatarID: user.AvatarID,
+	}
+	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
 		sv.sendError(w, core_errors.ErrEncodingRequest.Error(), http.StatusInternalServerError, err)
 		return

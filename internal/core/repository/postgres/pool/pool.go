@@ -11,6 +11,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type txKeyType struct{}
+
+var txKey = txKeyType{}
+
 type Pool interface {
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
@@ -64,7 +68,7 @@ func (p *ConnectionPool) OpTimeout() time.Duration {
 func (p *ConnectionPool) GetTx(
 	ctx context.Context,
 ) pgx.Tx {
-	if tx, ok := ctx.Value("tx").(pgx.Tx); ok {
+	if tx, ok := ctx.Value(txKey).(pgx.Tx); ok {
 		return tx
 	}
 	return nil
@@ -82,7 +86,7 @@ func (p *ConnectionPool) CtxWithTransaction(
 	}
 	defer tx.Rollback(ctx)
 
-	ctx_tx := context.WithValue(ctx, "tx", tx)
+	ctx_tx := context.WithValue(ctx, txKey, tx)
 	if err := fn(ctx_tx); err != nil {
 		return fmt.Errorf("execute transaction fn: %w", err)
 	}

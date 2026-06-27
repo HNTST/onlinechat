@@ -29,18 +29,16 @@ func (s *ChatService) SaveChat(
 				target_user_id,
 			)
 			if err != nil {
-				if errors.Is(err, core_errors.ErrChatNotExists) {
-					err = nil
-					chat_id, err = s.chatRepository.CreateNewChat(
-						txCtx,
-						name,
-					)
-				if err != nil {
-					return fmt.Errorf("create chat: %w", err)
+				if !errors.Is(err, core_errors.ErrChatNotExists) {
+					return fmt.Errorf("check existing chat: %w", err)
 				}
-				return nil
-			}
-			return fmt.Errorf("create chat: %w", err)
+				chat_id, err = s.chatRepository.CreateNewChat(
+					txCtx,
+					name,
+				)
+				if err != nil {
+					return fmt.Errorf("create new chat: %w", err)
+				}
 			}
 			err = s.chatRepository.AddUserToChat(
 				txCtx,

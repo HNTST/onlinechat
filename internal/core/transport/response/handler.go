@@ -59,9 +59,13 @@ func (h *HTTPResponseHandler) ErrorResponse(err error, msg string) {
 }
 
 func (h *HTTPResponseHandler) errorResponse(statusCode int, err error, msg string) {
+	errorMsg := err.Error()
+	if statusCode == http.StatusInternalServerError {
+		errorMsg = "Внутренняя ошибка сервера"
+	}
 	response := map[string]string{
 		"message": msg,
-		"error":   err.Error(),
+		"error":   errorMsg,
 	}
 	h.JSONResponse(
 		response,

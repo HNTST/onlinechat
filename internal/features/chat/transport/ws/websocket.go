@@ -63,7 +63,14 @@ func (h *ChatWSHandler) HandleConnections(w http.ResponseWriter, r *http.Request
 	h.clients[user_id] = conn
 	h.clientsMu.Unlock()
 
-	ctx := r.Context()
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
+
+	go func() {
+		<-ctx.Done()
+		conn.Close()
+	}()
+
 	log := core_logger.FromContext(ctx)
 	log.Info("websocket", "user_id", userID, "msg", "user connected")
 
