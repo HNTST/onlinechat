@@ -4,61 +4,53 @@ import (
 	core_errors "discord/internal/core/errors"
 	core_logger "discord/internal/core/logger"
 	core_http_response "discord/internal/core/transport/response"
+	core_http_utils "discord/internal/core/transport/utils"
+	"fmt"
 	"io"
 	"net/http"
-	"strings"
 )
 
-var mimeTypes = map[string]string{
-	".jpg":  "image/jpeg",
-	".jpeg": "image/jpeg",
-	".png":  "image/png",
-	".gif":  "image/gif",
-	".webp": "image/webp",
-}
-
-func contentTypeByExt(filename string) string {
-	idx := strings.LastIndex(filename, ".")
-	if idx == -1 {
-		return "image/jpeg"
-	}
-	ext := strings.ToLower(filename[idx:])
-	if mime, ok := mimeTypes[ext]; ok {
-		return mime
-	}
-	return "image/jpeg"
-}
-
-// GetAvatar отдает файл аватарки для отображения на UI
+// GetAvatarByID отдает файл аватарки по его ID из базы данных
 //
-//	@Summary		Получить изображение аватарки
-//	@Description	Возвращает бинарный поток файла изображения из хранилища MinIO для прямой вставки в HTML-тег <img />
+//	@Summary		Получить изображение аватарки по ID
+//	@Description	Находит метаданные файла в таблице files по ID, запрашивает объект из MinIO и стримит бинарный поток изображения для тега <img />
 //	@Tags			v2 / Файлы
 //	@Produce		image/jpeg
 //	@Produce		image/png
-//	@Param			filename	query	string	true	"Имя файла аватарки в хранилище"
-//	@Success		200			{file}	binary	"Бинарный поток изображения"
-//	@Failure		404			{object}	object{}	"Файл не найден"
+//	@Param			id	query		int	true	"Идентификатор аватарки (avatar_id)"
+//	@Success		200	{file}		binary "Бинарный поток изображения"
+//	@Failure		404	{object}	object "Файл или аватарка не найдены"
 //	@Router			/api/v2/user/avatar [get]
-func (h *FileHTTPHandler) GetAvatar(w http.ResponseWriter, r *http.Request) {
+func (h *FileHTTPHandler) GetAvatarByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
 
-	filename := r.URL.Query().Get("filename")
-	if filename == "" {
-		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "filename is required")
+	id, err := getAvatarIDQueryParam(r)
+	if err != nil {
+		responseHandler.ErrorResponse(err, "failed to get 'id' query param")
 		return
 	}
 
-	stream, err := h.fileService.GetAvatarStream(ctx, filename)
+	stream, mimeType, err := h.fileService.GetAvatarByID(ctx, int64(*id))
 	if err != nil {
-		responseHandler.ErrorResponse(core_errors.ErrUserNotFound, "file not found")
+		responseHandler.ErrorResponse(core_errors.ErrUserNotFound, fmt.Sprintf("файл или аватарка с id=%d не найдены", *id))
 		return
 	}
 	defer stream.Close()
 
-	w.Header().Set("Content-Type", contentTypeByExt(filename))
+	w.Header().Set("Content-Type", mimeType)
 	w.WriteHeader(http.StatusOK)
 	io.Copy(w, stream)
+}
+
+func getAvatarIDQueryParam(r *http.Request) (*int, error) {
+	id, err := core_http_utils.GetIntQueryParam(r, "id")
+	if err != nil {
+		return nil, fmt.Errorf("get 'id' query param: %w", err)
+	}
+	if id == nil {
+		return nil, fmt.Errorf("missing required 'id' query param: %w", core_errors.ErrInvalidArgument)
+	}
+	return id, nil
 }

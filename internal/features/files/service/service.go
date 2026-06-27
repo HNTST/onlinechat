@@ -14,6 +14,7 @@ type FileService struct {
 type FileRepository interface {
 	SaveFile(ctx context.Context, file domain.Files) (domain.Files, error)
 	UpdateUserAvatar(ctx context.Context, userID, fileID int64) error
+	GetFileByID(ctx context.Context, id int64) (*domain.Files, error)
 }
 
 type FileStorage interface {

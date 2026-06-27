@@ -11,6 +11,7 @@ type User struct {
 	Name     string    `json:"username"`
 	Password string    `json:"password"`
 	Reg      time.Time `json:"reg"`
+	AvatarID *int64    `json:"avatar_id,omitempty"`
 }
 
 func NewUser(id int64, name, password string, reg time.Time) User {
@@ -19,6 +20,16 @@ func NewUser(id int64, name, password string, reg time.Time) User {
 		Name:     name,
 		Password: UninitializedPassword,
 		Reg:      reg,
+	}
+}
+
+func NewUserWithAvatar(id int64, name, password string, reg time.Time, avatarID *int64) User {
+	return User{
+		Id:       id,
+		Name:     name,
+		Password: UninitializedPassword,
+		Reg:      reg,
+		AvatarID: avatarID,
 	}
 }
 

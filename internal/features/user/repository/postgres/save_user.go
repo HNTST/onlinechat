@@ -11,9 +11,9 @@ func (r *UserRepository) SaveUser(ctx context.Context, user domain.User) (domain
 	defer cancel()
 
 	query := `
-			insert into users (username, password,reg)
+			insert into users (username, password, reg)
 			values($1,$2,$3)
-			RETURNING id, username, reg
+			RETURNING id, username, reg, avatar_id
 		`
 
 	row := r.pool.QueryRow(ctx, query, user.Name, user.Password, user.Reg)
@@ -22,15 +22,17 @@ func (r *UserRepository) SaveUser(ctx context.Context, user domain.User) (domain
 		&userModel.ID,
 		&userModel.Username,
 		&userModel.Reg,
+		&userModel.AvatarID,
 	)
 	if err != nil {
 		return domain.User{}, fmt.Errorf("scan error: %w", err)
 	}
-	userDomain := domain.NewUser(
+	userDomain := domain.NewUserWithAvatar(
 		userModel.ID,
 		userModel.Username,
 		"-1",
 		userModel.Reg,
+		userModel.AvatarID,
 	)
 
 	return userDomain, err

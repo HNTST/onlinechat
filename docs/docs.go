@@ -707,7 +707,7 @@ const docTemplate = `{
         },
         "/api/v2/user": {
             "get": {
-                "description": "Получение данных пользователя по его ID",
+                "description": "Получение данных пользователя по его ID, включая avatar_id",
                 "consumes": [
                     "application/json"
                 ],
@@ -783,7 +783,7 @@ const docTemplate = `{
         },
         "/api/v2/user/avatar": {
             "get": {
-                "description": "Возвращает бинарный поток файла изображения из хранилища MinIO для прямой вставки в HTML-тег \u003cimg /\u003e",
+                "description": "Находит метаданные файла в таблице files по ID, запрашивает объект из MinIO и стримит бинарный поток изображения для тега \u003cimg /\u003e",
                 "produces": [
                     "image/jpeg",
                     "image/png"
@@ -791,12 +791,12 @@ const docTemplate = `{
                 "tags": [
                     "v2 / Файлы"
                 ],
-                "summary": "Получить изображение аватарки",
+                "summary": "Получить изображение аватарки по ID",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Имя файла аватарки в хранилище",
-                        "name": "filename",
+                        "type": "integer",
+                        "description": "Идентификатор аватарки (avatar_id)",
+                        "name": "id",
                         "in": "query",
                         "required": true
                     }
@@ -809,7 +809,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "Файл не найден",
+                        "description": "Файл или аватарка не найдены",
                         "schema": {
                             "type": "object"
                         }
@@ -960,6 +960,9 @@ const docTemplate = `{
         "discord_internal_core_domain.User": {
             "type": "object",
             "properties": {
+                "avatar_id": {
+                    "type": "integer"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -1127,6 +1130,9 @@ const docTemplate = `{
         "internal_features_user_transport_http.GetUserResponse": {
             "type": "object",
             "properties": {
+                "avatar_id": {
+                    "type": "integer"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -1158,6 +1164,9 @@ const docTemplate = `{
         "internal_features_user_transport_http.SaveUserResponse": {
             "type": "object",
             "properties": {
+                "avatar_id": {
+                    "type": "integer"
+                },
                 "id": {
                     "type": "integer"
                 },

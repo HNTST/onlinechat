@@ -13,7 +13,7 @@ type GetUserResponse UserDTOResponse
 // GetUser returns a user by ID
 //
 //	@Summary		Получение пользователя
-//	@Description	Получение данных пользователя по его ID
+//	@Description	Получение данных пользователя по его ID, включая avatar_id
 //	@Tags			v2 / Пользователи
 //	@Accept			json
 //	@Produce		json
