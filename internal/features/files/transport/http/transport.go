@@ -13,6 +13,7 @@ type FileHTTPHandler struct {
 
 type FileService interface {
 	UploadAvatar(ctx context.Context, userID int64, file io.Reader, origFileName string, size int64, contentType string) (int64, error)
+	GetAvatarStream(ctx context.Context, objectName string) (io.ReadCloser, error)
 }
 
 func NewFileHTTPHandler(fileService FileService) *FileHTTPHandler {
@@ -27,6 +28,11 @@ func (h *FileHTTPHandler) Routes() []core_http_server.Route {
 			Method:  http.MethodPost,
 			Path:    "/user/avatar",
 			Handler: h.UploadAvatar,
+		},
+		{
+			Method:  http.MethodGet,
+			Path:    "/user/avatar",
+			Handler: h.GetAvatar,
 		},
 	}
 }

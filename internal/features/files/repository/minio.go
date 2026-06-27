@@ -3,6 +3,7 @@ package files_repository
 import (
 	"context"
 	config "discord/internal/core/config"
+	"fmt"
 	"io"
 
 	"github.com/minio/minio-go/v7"
@@ -42,4 +43,16 @@ func (m *MinioStorage) Upload(ctx context.Context, fileName, contentType string,
 		return "", err
 	}
 	return info.Key, nil
+}
+
+func (m *MinioStorage) GetAvatarStream(ctx context.Context, objectName string) (io.ReadCloser, error) {
+	obj, err := m.mc.GetObject(ctx, m.cfg.BucketName, objectName, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("minio get object: %w", err)
+	}
+	if _, err := obj.Stat(); err != nil {
+		obj.Close()
+		return nil, fmt.Errorf("minio object stat: %w", err)
+	}
+	return obj, nil
 }

@@ -18,6 +18,7 @@ type FileRepository interface {
 
 type FileStorage interface {
 	Upload(ctx context.Context, fileName, contentType string, reader io.Reader, size int64) (string, error)
+	GetAvatarStream(ctx context.Context, objectName string) (io.ReadCloser, error)
 }
 
 func NewFileService(fileRepository FileRepository, fileStorage FileStorage) *FileService {

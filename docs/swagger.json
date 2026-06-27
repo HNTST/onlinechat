@@ -775,6 +775,40 @@
             }
         },
         "/api/v2/user/avatar": {
+            "get": {
+                "description": "Возвращает бинарный поток файла изображения из хранилища MinIO для прямой вставки в HTML-тег \u003cimg /\u003e",
+                "produces": [
+                    "image/jpeg",
+                    "image/png"
+                ],
+                "tags": [
+                    "v2 / Файлы"
+                ],
+                "summary": "Получить изображение аватарки",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Имя файла аватарки в хранилище",
+                        "name": "filename",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Бинарный поток изображения",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "404": {
+                        "description": "Файл не найден",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Загрузка файла аватара пользователя в MinIO и сохранение метаданных",
                 "consumes": [

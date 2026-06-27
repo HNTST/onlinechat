@@ -52,6 +52,13 @@ func main() {
 	}
 	logger.Info("Успешное подлючение к базе  postges")
 
+	logger.Info("Запуск миграций")
+	if err := core_postgres_pool.RunMigrations(pgPool); err != nil {
+		logger.Error("Migration error", "error", err)
+		return
+	}
+	logger.Info("Миграции успешно применены")
+
 	logger.Info("Подлючение к базе данных minio")
 	mn := minio.NewMinio(cfg.Config_Minio)
 	if err := mn.InitMinio(); err != nil {

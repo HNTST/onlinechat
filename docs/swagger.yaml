@@ -671,6 +671,30 @@ paths:
       tags:
       - v2 / Пользователи
   /api/v2/user/avatar:
+    get:
+      description: Возвращает бинарный поток файла изображения из хранилища MinIO
+        для прямой вставки в HTML-тег <img />
+      parameters:
+      - description: Имя файла аватарки в хранилище
+        in: query
+        name: filename
+        required: true
+        type: string
+      produces:
+      - image/jpeg
+      - image/png
+      responses:
+        "200":
+          description: Бинарный поток изображения
+          schema:
+            type: file
+        "404":
+          description: Файл не найден
+          schema:
+            type: object
+      summary: Получить изображение аватарки
+      tags:
+      - v2 / Файлы
     post:
       consumes:
       - multipart/form-data
