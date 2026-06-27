@@ -18,6 +18,8 @@ COPY --from=builder /build/app .
 
 COPY --from=builder /build/internal/core/config ./internal/core/config
 
+COPY --from=builder /build/migrations ./migrations
+
 EXPOSE 8080
 
 CMD ["./app"]
