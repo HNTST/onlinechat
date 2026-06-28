@@ -16,15 +16,26 @@ import (
 //	@Tags			v2 / Чаты
 //	@Accept			json
 //	@Produce		json
+//	@Param			chat_id		path		int	true	"ID чата"
 //	@Param			message_id	path		int	true	"ID сообщения"
 //	@Success		200	{object}	object{}
 //	@Failure		400	{object}	object{}
 //	@Failure		404	{object}	object{}
-//	@Router			/api/v2/chat/message/{message_id} [delete]
+//	@Router			/api/v2/chats/{chat_id}/messages/{message_id} [delete]
 func (h *ChatHttpHandler) DeleteMessage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
+
+	chatIDStr := r.PathValue("chat_id")
+	if chatIDStr == "" {
+		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "missing chat_id in path")
+		return
+	}
+	if _, err := strconv.ParseInt(chatIDStr, 10, 64); err != nil {
+		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "invalid chat_id in path")
+		return
+	}
 
 	messageIDStr := r.PathValue("message_id")
 	if messageIDStr == "" {

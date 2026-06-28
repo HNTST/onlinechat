@@ -40,7 +40,7 @@ func (m *MinioStorage) Upload(ctx context.Context, fileName, contentType string,
 	opts := minio.PutObjectOptions{ContentType: contentType}
 	info, err := m.mc.PutObject(ctx, m.cfg.BucketName, fileName, reader, size, opts)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("minio put object: %w", err)
 	}
 	return info.Key, nil
 }

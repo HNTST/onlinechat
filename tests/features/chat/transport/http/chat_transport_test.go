@@ -148,7 +148,7 @@ func TestChatTransport_EditMessage_Success(t *testing.T) {
 	mockSvc.On("EditMessage", mock.Anything, int64(1), "new text").Return(nil)
 
 	bodyReader := strings.NewReader(`{"text": "new text"}`)
-	req, err := http.NewRequest(http.MethodPut, srv.URL+"/api/v2/chat/message/1", bodyReader)
+	req, err := http.NewRequest(http.MethodPut, srv.URL+"/api/v2/chats/5/messages/1", bodyReader)
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -166,7 +166,7 @@ func TestChatTransport_EditMessage_EmptyBody(t *testing.T) {
 	defer srv.Close()
 
 	bodyReader := strings.NewReader(`{"text": ""}`)
-	req, err := http.NewRequest(http.MethodPut, srv.URL+"/api/v2/chat/message/1", bodyReader)
+	req, err := http.NewRequest(http.MethodPut, srv.URL+"/api/v2/chats/5/messages/1", bodyReader)
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -185,7 +185,7 @@ func TestChatTransport_DeleteMessage_Success(t *testing.T) {
 
 	mockSvc.On("SoftDeleteMessage", mock.Anything, int64(1)).Return(nil)
 
-	req, err := http.NewRequest(http.MethodDelete, srv.URL+"/api/v2/chat/message/1", nil)
+	req, err := http.NewRequest(http.MethodDelete, srv.URL+"/api/v2/chats/5/messages/1", nil)
 	require.NoError(t, err)
 
 	resp, err := http.DefaultClient.Do(req)
@@ -201,7 +201,7 @@ func TestChatTransport_DeleteMessage_InvalidID(t *testing.T) {
 	srv := setupChatServer(t, mockSvc)
 	defer srv.Close()
 
-	req, err := http.NewRequest(http.MethodDelete, srv.URL+"/api/v2/chat/message/abc", nil)
+	req, err := http.NewRequest(http.MethodDelete, srv.URL+"/api/v2/chats/5/messages/abc", nil)
 	require.NoError(t, err)
 
 	resp, err := http.DefaultClient.Do(req)
@@ -219,8 +219,12 @@ func TestChatTransport_MarkMessagesAsRead_Success(t *testing.T) {
 
 	mockSvc.On("MarkMessagesAsRead", mock.Anything, int64(10), int64(42), int64(100)).Return(nil)
 
-	bodyReader := strings.NewReader(`{"chat_id": 10, "last_read_message_id": 100}`)
-	resp, err := http.Post(srv.URL+"/api/v2/chat/messages/read?user_id=42", "application/json", bodyReader)
+	bodyReader := strings.NewReader(`{"last_read_message_id": 100}`)
+	req, err := http.NewRequest(http.MethodPatch, srv.URL+"/api/v2/chats/10/messages/read-status?user_id=42", bodyReader)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
@@ -233,8 +237,12 @@ func TestChatTransport_MarkMessagesAsRead_MissingUserID(t *testing.T) {
 	srv := setupChatServer(t, mockSvc)
 	defer srv.Close()
 
-	bodyReader := strings.NewReader(`{"chat_id": 10, "last_read_message_id": 100}`)
-	resp, err := http.Post(srv.URL+"/api/v2/chat/messages/read", "application/json", bodyReader)
+	bodyReader := strings.NewReader(`{"last_read_message_id": 100}`)
+	req, err := http.NewRequest(http.MethodPatch, srv.URL+"/api/v2/chats/10/messages/read-status", bodyReader)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
@@ -247,7 +255,7 @@ func TestChatTransport_Pagination_InvalidLimit(t *testing.T) {
 	srv := setupChatServer(t, mockSvc)
 	defer srv.Close()
 
-	resp, err := http.Get(srv.URL + "/api/v2/messages?chat_id=1&limit=-1")
+	resp, err := http.Get(srv.URL + "/api/v2/chats/1/messages?limit=-1")
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
@@ -259,7 +267,7 @@ func TestChatTransport_Pagination_InvalidLastMessageID(t *testing.T) {
 	srv := setupChatServer(t, mockSvc)
 	defer srv.Close()
 
-	resp, err := http.Get(srv.URL + "/api/v2/messages?chat_id=1&last_message_id=abc")
+	resp, err := http.Get(srv.URL + "/api/v2/chats/1/messages?last_message_id=abc")
 	require.NoError(t, err)
 	defer resp.Body.Close()
 

@@ -9,7 +9,6 @@ import (
 )
 
 type MarkMessagesAsReadRequest struct {
-	ChatID           int64 `json:"chat_id" validate:"required"`
 	LastReadMessageID int64 `json:"last_read_message_id" validate:"required"`
 }
 
@@ -20,15 +19,27 @@ type MarkMessagesAsReadRequest struct {
 //	@Tags			v2 / Чаты
 //	@Accept			json
 //	@Produce		json
+//	@Param			chat_id	path		int							true	"ID чата"
 //	@Param			request	body		MarkMessagesAsReadRequest	true	"Данные для отметки"
 //	@Param			user_id	query		int	true	"ID пользователя"
 //	@Success		200		{object}	object{}
 //	@Failure		400		{object}	object{}
-//	@Router			/api/v2/chat/messages/read [post]
+//	@Router			/api/v2/chats/{chat_id}/messages/read-status [patch]
 func (h *ChatHttpHandler) MarkMessagesAsRead(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
+
+	chatIDStr := r.PathValue("chat_id")
+	if chatIDStr == "" {
+		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "missing chat_id in path")
+		return
+	}
+	chatID, err := parseInt64(chatIDStr)
+	if err != nil {
+		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "invalid chat_id in path")
+		return
+	}
 
 	var req MarkMessagesAsReadRequest
 	if err := core_http_request.DecodeAndValidateRequest(r, &req); err != nil {
@@ -47,7 +58,7 @@ func (h *ChatHttpHandler) MarkMessagesAsRead(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if err := h.chatService.MarkMessagesAsRead(ctx, req.ChatID, userID, req.LastReadMessageID); err != nil {
+	if err := h.chatService.MarkMessagesAsRead(ctx, chatID, userID, req.LastReadMessageID); err != nil {
 		responseHandler.ErrorResponse(err, "failed to mark messages as read")
 		return
 	}

@@ -97,32 +97,32 @@ func (h *ChatHttpHandler) Routes() []core_http_server.Route {
 		},
 		{
 			Method:  http.MethodGet,
-			Path:    "/messages",
+			Path:    "/chats/{chat_id}/messages",
 			Handler: h.GetChatMessages,
 		},
 		{
 			Method:  http.MethodGet,
-			Path:    "/chats/members",
+			Path:    "/chats/{chat_id}/members",
 			Handler: h.GetChatMembers,
 		},
 		{
 			Method:  http.MethodPost,
-			Path:    "/chat/message",
+			Path:    "/chats/{chat_id}/messages",
 			Handler: h.SaveMessage,
 		},
 		{
 			Method:  http.MethodPut,
-			Path:    "/chat/message/{message_id}",
+			Path:    "/chats/{chat_id}/messages/{message_id}",
 			Handler: h.EditMessage,
 		},
 		{
 			Method:  http.MethodDelete,
-			Path:    "/chat/message/{message_id}",
+			Path:    "/chats/{chat_id}/messages/{message_id}",
 			Handler: h.DeleteMessage,
 		},
 		{
-			Method:  http.MethodPost,
-			Path:    "/chat/messages/read",
+			Method:  http.MethodPatch,
+			Path:    "/chats/{chat_id}/messages/read-status",
 			Handler: h.MarkMessagesAsRead,
 		},
 	}

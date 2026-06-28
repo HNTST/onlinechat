@@ -11,7 +11,6 @@ import (
 )
 
 type SaveMessageRequest struct {
-	ChatId   int64  `json:"chat_id" validate:"required"`
 	SenderId int64  `json:"sender_id" validate:"required"`
 	Message  string `json:"message" validate:"required"`
 }
@@ -23,14 +22,26 @@ type SaveMessageRequest struct {
 //	@Tags			v2 / Чаты
 //	@Accept			json
 //	@Produce		json
+//	@Param			chat_id	path		int				true	"ID чата"
 //	@Param			request	body		SaveMessageRequest	true	"Данные сообщения"
 //	@Success		201		{object}	object{}
 //	@Failure		400		{object}	object{}
-//	@Router			/api/v2/chat/message [post]
+//	@Router			/api/v2/chats/{chat_id}/messages [post]
 func (h *ChatHttpHandler) SaveMessage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
+
+	chatIDStr := r.PathValue("chat_id")
+	if chatIDStr == "" {
+		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "param is incorrect")
+		return
+	}
+	chatID, err := parseInt64(chatIDStr)
+	if err != nil {
+		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "param is incorrect")
+		return
+	}
 
 	var req SaveMessageRequest
 	if err := core_http_request.DecodeAndValidateRequest(r, &req); err != nil {
@@ -39,7 +50,7 @@ func (h *ChatHttpHandler) SaveMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	msg := domain.Messages{
-		ChatId:   req.ChatId,
+		ChatId:   chatID,
 		SenderId: req.SenderId,
 		Message:  req.Message,
 		Sent_at:  time.Now(),

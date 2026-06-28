@@ -18,18 +18,18 @@ type GetChatMembersResponse struct {
 //	@Tags			v2 / Чаты
 //	@Accept			json
 //	@Produce		json
-//	@Param			chat_id	query		int	true	"ID чата"
+//	@Param			chat_id	path		int	true	"ID чата"
 //	@Success		200		{object}	GetChatMembersResponse
 //	@Failure		400		{object}	object{}
-//	@Router			/api/v2/chats/members [get]
+//	@Router			/api/v2/chats/{chat_id}/members [get]
 func (h *ChatHttpHandler) GetChatMembers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := core_logger.FromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
 
-	chatIDStr := r.URL.Query().Get("chat_id")
+	chatIDStr := r.PathValue("chat_id")
 	if chatIDStr == "" {
-		responseHandler.ErrorResponse(core_errors.ErrParamMissing, "param is incorrect")
+		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "param is incorrect")
 		return
 	}
 	chatID, err := parseInt64(chatIDStr)

@@ -51,7 +51,7 @@ func (h *ChatHttpHandler) GetUserChats(w http.ResponseWriter, r *http.Request) {
 
 	userIDStr := r.URL.Query().Get("user_id")
 	if userIDStr == "" {
-		responseHandler.ErrorResponse(core_errors.ErrParamMissing, "param is incorrect")
+		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "param is incorrect")
 		return
 	}
 	userID, err := parseInt64(userIDStr)

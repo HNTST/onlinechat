@@ -9,7 +9,7 @@ import (
 type User struct {
 	Id       int64     `json:"id"`
 	Name     string    `json:"username"`
-	Password string    `json:"password"`
+	Password string    `json:"-"`
 	Reg      time.Time `json:"reg"`
 	AvatarID *int64    `json:"avatar_id,omitempty"`
 }
