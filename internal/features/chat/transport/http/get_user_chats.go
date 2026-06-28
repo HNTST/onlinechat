@@ -40,7 +40,7 @@ type ChatExtendedDTO struct {
 //	@Tags			v2 / Чаты
 //	@Accept			json
 //	@Produce		json
-//	@Param			user_id	query		int	true	"ID пользователя"
+//	@Param			user_id	query		int64	true	"ID пользователя"
 //	@Success		200		{object}	GetUserChatsExtendedResponse
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v2/chats [get]

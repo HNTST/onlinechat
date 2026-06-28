@@ -19,9 +19,9 @@ type MarkMessagesAsReadRequest struct {
 //	@Tags			v2 / Чаты
 //	@Accept			json
 //	@Produce		json
-//	@Param			chat_id	path		int							true	"ID чата"
+//	@Param			chat_id	path		int64						true	"ID чата"
 //	@Param			request	body		MarkMessagesAsReadRequest	true	"Данные для отметки"
-//	@Param			user_id	query		int	true	"ID пользователя"
+//	@Param			user_id	query		int64	true	"ID пользователя"
 //	@Success		200		{object}	object{}
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v2/chats/{chat_id}/messages/read-status [patch]

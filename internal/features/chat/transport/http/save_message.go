@@ -22,7 +22,7 @@ type SaveMessageRequest struct {
 //	@Tags			v2 / Чаты
 //	@Accept			json
 //	@Produce		json
-//	@Param			chat_id	path		int				true	"ID чата"
+//	@Param			chat_id	path		int64				true	"ID чата"
 //	@Param			request	body		SaveMessageRequest	true	"Данные сообщения"
 //	@Success		201		{object}	object{}
 //	@Failure		400		{object}	object{}

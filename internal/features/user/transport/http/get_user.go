@@ -17,7 +17,7 @@ type GetUserResponse UserDTOResponse
 //	@Tags			v2 / Пользователи
 //	@Accept			json
 //	@Produce		json
-//	@Param			user_id	query		int	true	"ID пользователя"
+//	@Param			user_id	query		int64	true	"ID пользователя"
 //	@Success		200		{object}	GetUserResponse
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v2/user [get]

@@ -22,8 +22,8 @@ type EditMessageRequest struct {
 //	@Tags			v2 / Чаты
 //	@Accept			json
 //	@Produce		json
-//	@Param			chat_id		path		int					true	"ID чата"
-//	@Param			message_id	path		int					true	"ID сообщения"
+//	@Param			chat_id		path		int64				true	"ID чата"
+//	@Param			message_id	path		int64				true	"ID сообщения"
 //	@Param			request		body		EditMessageRequest	true	"Новый текст"
 //	@Success		200			{object}	object{}
 //	@Failure		400	{object}	object{}

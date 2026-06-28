@@ -1,8 +1,953 @@
 basePath: /
+definitions:
+  chat_transport_http.AddUserToChatRequest:
+    properties:
+      users_ids:
+        items:
+          type: integer
+        type: array
+    required:
+    - users_ids
+    type: object
+  chat_transport_http.AddUserToChatResponse:
+    properties:
+      chat_id:
+        format: int64
+        type: integer
+      users_ids:
+        items:
+          format: int64
+          type: integer
+        type: array
+    type: object
+  chat_transport_http.ChatExtendedDTO:
+    properties:
+      id:
+        type: integer
+      last_message:
+        $ref: '#/definitions/chat_transport_http.LastMessageDTO'
+      name:
+        type: string
+      unread_count:
+        type: integer
+    type: object
+  chat_transport_http.EditMessageRequest:
+    properties:
+      text:
+        type: string
+    required:
+    - text
+    type: object
+  chat_transport_http.GetChatMembersResponse:
+    properties:
+      members:
+        items:
+          type: integer
+        type: array
+    type: object
+  chat_transport_http.GetChatMessagesResponse:
+    properties:
+      messages:
+        items:
+          $ref: '#/definitions/chat_transport_http.MessageDTO'
+        type: array
+    type: object
+  chat_transport_http.GetUserChatsExtendedResponse:
+    properties:
+      chats:
+        items:
+          $ref: '#/definitions/chat_transport_http.ChatExtendedDTO'
+        type: array
+    type: object
+  chat_transport_http.LastMessageDTO:
+    properties:
+      id:
+        type: integer
+      is_read:
+        type: boolean
+      sender_id:
+        type: integer
+      sent_at:
+        type: string
+      text:
+        type: string
+    type: object
+  chat_transport_http.MarkMessagesAsReadRequest:
+    properties:
+      last_read_message_id:
+        type: integer
+    required:
+    - last_read_message_id
+    type: object
+  chat_transport_http.MessageDTO:
+    properties:
+      id:
+        type: integer
+      is_deleted:
+        type: boolean
+      is_edited:
+        type: boolean
+      is_read:
+        type: boolean
+      message:
+        type: string
+      sender_id:
+        type: integer
+      sent_at:
+        type: string
+    type: object
+  chat_transport_http.SaveChatRequest:
+    properties:
+      author:
+        type: integer
+      chat_name:
+        type: string
+      target_user:
+        type: integer
+    required:
+    - author
+    - chat_name
+    - target_user
+    type: object
+  chat_transport_http.SaveChatResponse:
+    properties:
+      chat_id:
+        type: integer
+    type: object
+  chat_transport_http.SaveMessageRequest:
+    properties:
+      message:
+        type: string
+      sender_id:
+        type: integer
+    required:
+    - message
+    - sender_id
+    type: object
+  domain.Chat:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  domain.Messages:
+    properties:
+      chat_id:
+        type: integer
+      id:
+        type: integer
+      is_deleted:
+        type: boolean
+      is_edited:
+        type: boolean
+      is_read:
+        type: boolean
+      message:
+        type: string
+      sender_id:
+        type: integer
+      sent_at:
+        type: string
+    type: object
+  domain.User:
+    properties:
+      avatar_id:
+        type: integer
+      id:
+        type: integer
+      reg:
+        type: string
+      username:
+        type: string
+    type: object
+  files_transport_http.UploadAvatarResponse:
+    properties:
+      file_id:
+        type: integer
+    type: object
+  users_transport_http.GetUserIDResponse:
+    properties:
+      user_id:
+        type: integer
+    type: object
+  users_transport_http.GetUserResponse:
+    properties:
+      avatar_id:
+        type: integer
+      id:
+        type: integer
+      reg:
+        type: string
+      username:
+        type: string
+    type: object
+  users_transport_http.SaveUserRequest:
+    properties:
+      password:
+        description: Временно не обязательный
+        minLength: 8
+        type: string
+      username:
+        maxLength: 100
+        type: string
+    required:
+    - username
+    type: object
+  users_transport_http.SaveUserResponse:
+    properties:
+      avatar_id:
+        type: integer
+      id:
+        type: integer
+      reg:
+        type: string
+      username:
+        type: string
+    type: object
 info:
   contact: {}
   description: API мессенджер / чат-приложение (v1 legacy + v2 feature-based)
   title: Discord API
   version: "1.0"
-paths: {}
+paths:
+  /api/v1/chat:
+    post:
+      consumes:
+      - application/json
+      description: Создание нового чата с двумя участниками
+      parameters:
+      - description: Данные чата
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            author:
+              format: int64
+              type: integer
+            chat_name:
+              type: string
+            target_user:
+              format: int64
+              type: integer
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            properties:
+              chat_id:
+                format: int64
+                type: integer
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Создание чата
+      tags:
+      - v1 / Чаты
+  /api/v1/chats:
+    get:
+      consumes:
+      - application/json
+      description: Получение всех чатов, в которых состоит пользователь
+      parameters:
+      - description: ID пользователя
+        in: query
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Chat'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Чаты пользователя
+      tags:
+      - v1 / Чаты
+  /api/v1/chats/add_user:
+    post:
+      consumes:
+      - application/json
+      description: Добавление пользователя в существующий чат по ID чата
+      parameters:
+      - description: Данные для добавления
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            chat_id:
+              format: int64
+              type: integer
+            target_user_id:
+              format: int64
+              type: integer
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Добавление пользователя в чат
+      tags:
+      - v1 / Чаты
+  /api/v1/chats/members:
+    get:
+      consumes:
+      - application/json
+      description: Получение ID всех участников чата
+      parameters:
+      - description: ID чата
+        in: query
+        name: chat_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              members:
+                items:
+                  format: int64
+                  type: integer
+                type: array
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Участники чата
+      tags:
+      - v1 / Чаты
+  /api/v1/messages:
+    get:
+      consumes:
+      - application/json
+      description: Получение всех сообщений в чате
+      parameters:
+      - description: ID чата
+        in: query
+        name: chat_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Messages'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Сообщения чата
+      tags:
+      - v1 / Чаты
+  /api/v1/user:
+    get:
+      consumes:
+      - application/json
+      description: Получение данных пользователя по его ID
+      parameters:
+      - description: ID пользователя
+        in: query
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.User'
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Получение пользователя
+      tags:
+      - v1 / Пользователи
+    post:
+      consumes:
+      - application/json
+      description: Создание новой учётной записи пользователя
+      parameters:
+      - description: Данные для регистрации
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            password:
+              type: string
+            username:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            properties:
+              user_id:
+                format: int64
+                type: integer
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Регистрация пользователя
+      tags:
+      - v1 / Пользователи
+  /api/v1/user/avatar:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Загрузка файла аватара пользователя в MinIO и сохранение метаданных
+      parameters:
+      - description: ID пользователя
+        in: query
+        name: user_id
+        required: true
+        type: integer
+      - description: Файл изображения аватара
+        in: formData
+        name: new_user_avatar
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            properties:
+              file_id:
+                format: int64
+                type: integer
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Загрузка аватара
+      tags:
+      - v1 / Файлы
+  /api/v1/user_id:
+    get:
+      consumes:
+      - application/json
+      description: Получение ID пользователя по его имени
+      parameters:
+      - description: Имя пользователя
+        in: query
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            properties:
+              user_id:
+                format: int64
+                type: integer
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Получение ID пользователя
+      tags:
+      - v1 / Пользователи
+  /api/v1/ws:
+    get:
+      description: Обновление HTTP до WebSocket для обмена сообщениями в реальном
+        времени
+      parameters:
+      - description: ID пользователя
+        in: query
+        name: user_id
+        required: true
+        type: integer
+      responses:
+        "101":
+          description: Switching Protocols
+          schema:
+            type: object
+      summary: WebSocket-соединение
+      tags:
+      - v1 / WebSocket
+  /api/v2/chat:
+    post:
+      consumes:
+      - application/json
+      description: Создание нового чата с двумя участниками
+      parameters:
+      - description: Данные чата
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/chat_transport_http.SaveChatRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/chat_transport_http.SaveChatResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Создание чата
+      tags:
+      - v2 / Чаты
+  /api/v2/chat/{chat_id}/members:
+    post:
+      consumes:
+      - application/json
+      description: Добавление пользователей в существующий чат по его ID
+      parameters:
+      - description: ID чата
+        format: int64
+        in: path
+        name: chat_id
+        required: true
+        type: integer
+      - description: ID пользователей
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/chat_transport_http.AddUserToChatRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/chat_transport_http.AddUserToChatResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Добавление пользователей в чат
+      tags:
+      - v2 / Чаты
+  /api/v2/chats:
+    get:
+      consumes:
+      - application/json
+      description: Получение всех чатов пользователя с последним сообщением и счётчиком
+        непрочитанных
+      parameters:
+      - description: ID пользователя
+        format: int64
+        in: query
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/chat_transport_http.GetUserChatsExtendedResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Чаты пользователя
+      tags:
+      - v2 / Чаты
+  /api/v2/chats/{chat_id}/members:
+    get:
+      consumes:
+      - application/json
+      description: Получение ID всех участников чата
+      parameters:
+      - description: ID чата
+        format: int64
+        in: path
+        name: chat_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/chat_transport_http.GetChatMembersResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Участники чата
+      tags:
+      - v2 / Чаты
+  /api/v2/chats/{chat_id}/messages:
+    get:
+      consumes:
+      - application/json
+      description: Получение сообщений в чате с курсорной пагинацией
+      parameters:
+      - description: ID чата
+        format: int64
+        in: path
+        name: chat_id
+        required: true
+        type: integer
+      - description: ID последнего сообщения для пагинации
+        format: int64
+        in: query
+        name: last_message_id
+        type: integer
+      - description: Лимит сообщений (default 50)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/chat_transport_http.GetChatMessagesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Сообщения чата
+      tags:
+      - v2 / Чаты
+    post:
+      consumes:
+      - application/json
+      description: Отправка сообщения в чат
+      parameters:
+      - description: ID чата
+        format: int64
+        in: path
+        name: chat_id
+        required: true
+        type: integer
+      - description: Данные сообщения
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/chat_transport_http.SaveMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Отправка сообщения
+      tags:
+      - v2 / Чаты
+  /api/v2/chats/{chat_id}/messages/{message_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Помечает сообщение как удалённое (is_deleted=true, текст очищается)
+      parameters:
+      - description: ID чата
+        format: int64
+        in: path
+        name: chat_id
+        required: true
+        type: integer
+      - description: ID сообщения
+        format: int64
+        in: path
+        name: message_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            type: object
+      summary: Мягкое удаление сообщения
+      tags:
+      - v2 / Чаты
+    put:
+      consumes:
+      - application/json
+      description: Редактирование текста сообщения (устанавливает is_edited=true)
+      parameters:
+      - description: ID чата
+        format: int64
+        in: path
+        name: chat_id
+        required: true
+        type: integer
+      - description: ID сообщения
+        format: int64
+        in: path
+        name: message_id
+        required: true
+        type: integer
+      - description: Новый текст
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/chat_transport_http.EditMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            type: object
+      summary: Редактирование сообщения
+      tags:
+      - v2 / Чаты
+  /api/v2/chats/{chat_id}/messages/read-status:
+    patch:
+      consumes:
+      - application/json
+      description: Помечает все чужие сообщения в чате до указанного ID как прочитанные
+      parameters:
+      - description: ID чата
+        format: int64
+        in: path
+        name: chat_id
+        required: true
+        type: integer
+      - description: Данные для отметки
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/chat_transport_http.MarkMessagesAsReadRequest'
+      - description: ID пользователя
+        format: int64
+        in: query
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Отметка о прочтении
+      tags:
+      - v2 / Чаты
+  /api/v2/user:
+    get:
+      consumes:
+      - application/json
+      description: Получение данных пользователя по его ID, включая avatar_id
+      parameters:
+      - description: ID пользователя
+        format: int64
+        in: query
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users_transport_http.GetUserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Получение пользователя
+      tags:
+      - v2 / Пользователи
+    post:
+      consumes:
+      - application/json
+      description: Создание новой учётной записи пользователя
+      parameters:
+      - description: Данные для регистрации
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/users_transport_http.SaveUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/users_transport_http.SaveUserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Регистрация пользователя
+      tags:
+      - v2 / Пользователи
+  /api/v2/user/avatar:
+    get:
+      description: Находит метаданные файла в таблице files по ID, запрашивает объект
+        из MinIO и стримит бинарный поток изображения для тега <img />
+      parameters:
+      - description: Идентификатор аватарки (avatar_id)
+        format: int64
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - image/jpeg
+      - image/png
+      responses:
+        "200":
+          description: Бинарный поток изображения
+          schema:
+            type: file
+        "404":
+          description: Файл или аватарка не найдены
+          schema:
+            type: object
+      summary: Получить изображение аватарки по ID
+      tags:
+      - v2 / Файлы
+    post:
+      consumes:
+      - multipart/form-data
+      description: Загрузка файла аватара пользователя в MinIO и сохранение метаданных
+      parameters:
+      - description: ID пользователя
+        format: int64
+        in: query
+        name: user_id
+        required: true
+        type: integer
+      - description: Файл изображения аватара
+        in: formData
+        name: new_user_avatar
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/files_transport_http.UploadAvatarResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Загрузка аватара
+      tags:
+      - v2 / Файлы
+  /api/v2/user_id:
+    get:
+      consumes:
+      - application/json
+      description: Получение ID пользователя по его имени
+      parameters:
+      - description: Имя пользователя
+        in: query
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users_transport_http.GetUserIDResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Получение ID пользователя
+      tags:
+      - v2 / Пользователи
+  /api/v2/ws:
+    get:
+      description: Обновление HTTP до WebSocket для обмена сообщениями в реальном
+        времени (v2)
+      parameters:
+      - description: ID пользователя
+        in: query
+        name: user_id
+        required: true
+        type: integer
+      responses:
+        "101":
+          description: Switching Protocols
+          schema:
+            type: object
+      summary: WebSocket-соединение
+      tags:
+      - v2 / WebSocket
 swagger: "2.0"

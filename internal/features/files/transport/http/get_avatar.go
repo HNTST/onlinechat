@@ -17,7 +17,7 @@ import (
 //	@Tags			v2 / Файлы
 //	@Produce		image/jpeg
 //	@Produce		image/png
-//	@Param			id	query		int	true	"Идентификатор аватарки (avatar_id)"
+//	@Param			id	query		int64	true	"Идентификатор аватарки (avatar_id)"
 //	@Success		200	{file}		binary "Бинарный поток изображения"
 //	@Failure		404	{object}	object "Файл или аватарка не найдены"
 //	@Router			/api/v2/user/avatar [get]

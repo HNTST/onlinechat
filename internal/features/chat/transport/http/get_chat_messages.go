@@ -29,8 +29,8 @@ type MessageDTO struct {
 //	@Tags			v2 / Чаты
 //	@Accept			json
 //	@Produce		json
-//	@Param			chat_id			path		int	true	"ID чата"
-//	@Param			last_message_id	query		int	false	"ID последнего сообщения для пагинации"
+//	@Param			chat_id			path		int64	true	"ID чата"
+//	@Param			last_message_id	query		int64	false	"ID последнего сообщения для пагинации"
 //	@Param			limit			query		int	false	"Лимит сообщений (default 50)"
 //	@Success		200				{object}	GetChatMessagesResponse
 //	@Failure		400				{object}	object{}

@@ -24,7 +24,7 @@ type AddUserToChatResponse struct {
 //	@Tags			v2 / Чаты
 //	@Accept			json
 //	@Produce		json
-//	@Param			chat_id	path		int					true	"ID чата"
+//	@Param			chat_id	path		int64				true	"ID чата"
 //	@Param			request	body		AddUserToChatRequest	true	"ID пользователей"
 //	@Success		200		{object}	AddUserToChatResponse
 //	@Failure		400		{object}	object{}

@@ -18,7 +18,7 @@ type GetChatMembersResponse struct {
 //	@Tags			v2 / Чаты
 //	@Accept			json
 //	@Produce		json
-//	@Param			chat_id	path		int	true	"ID чата"
+//	@Param			chat_id	path		int64	true	"ID чата"
 //	@Success		200		{object}	GetChatMembersResponse
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v2/chats/{chat_id}/members [get]

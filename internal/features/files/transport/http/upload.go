@@ -29,7 +29,7 @@ type UploadAvatarResponse struct {
 //	@Tags			v2 / Файлы
 //	@Accept			mpfd
 //	@Produce		json
-//	@Param			user_id			query		int		true	"ID пользователя"
+//	@Param			user_id			query		int64	true	"ID пользователя"
 //	@Param			new_user_avatar	formData	file	true	"Файл изображения аватара"
 //	@Success		201				{object}	UploadAvatarResponse
 //	@Failure		400				{object}	object{}
