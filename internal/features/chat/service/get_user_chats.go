@@ -13,3 +13,11 @@ func (s *ChatService) GetUserChats(ctx context.Context, user_id int64) ([]domain
 	}
 	return chats, nil
 }
+
+func (s *ChatService) GetUserChatsExtended(ctx context.Context, userID int64) ([]domain.ChatInfo, error) {
+	chats, err := s.chatRepository.GetUserChatsExtended(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("get user chats extended: %w", err)
+	}
+	return chats, nil
+}

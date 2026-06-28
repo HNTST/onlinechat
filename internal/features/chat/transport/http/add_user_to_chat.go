@@ -55,7 +55,7 @@ func (h *ChatHttpHandler) AddUserToChat(
 		&request,
 	); err != nil {
 		responseHandler.ErrorResponse(
-			err,
+			core_errors.ErrInvalidArgument,
 			"error to decode of validate json request",
 		)
 		return

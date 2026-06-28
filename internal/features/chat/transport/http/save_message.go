@@ -1,6 +1,7 @@
 package chat_transport_http
 
 import (
+	core_errors "discord/internal/core/errors"
 	"discord/internal/core/domain"
 	core_logger "discord/internal/core/logger"
 	core_http_request "discord/internal/core/transport/request"
@@ -33,7 +34,7 @@ func (h *ChatHttpHandler) SaveMessage(w http.ResponseWriter, r *http.Request) {
 
 	var req SaveMessageRequest
 	if err := core_http_request.DecodeAndValidateRequest(r, &req); err != nil {
-		responseHandler.ErrorResponse(err, "error to decode or validate json request")
+		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "error to decode or validate json request")
 		return
 	}
 

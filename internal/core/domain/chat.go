@@ -1,18 +1,23 @@
 package domain
 
+import "time"
+
 type Chat struct {
 	Id   int64  `json:"id"`
 	Name string `json:"name"`
 }
 
-// type ChatRepository interface {
-// 	GetUserChats(user_id int64) ([]Chat, error)
-// 	GetChatMembers(chat_id int64) ([]int64, error)
-// 	SaveUserToChat(user_id, chat_id int64) error
-// 	SaveChatWithAuthor(name string, user_id, target_user_id int64) (int64, error)
-// }
-// type ChatService interface {
-// 	SaveChat(chat_name string, user_id, target_user_id int64) (int64, error)
-// 	GetUserChats(user_id int64) ([]Chat, error)
-// 	GetChatMembers(chat_id int64) ([]int64, error)
-// }
+type MessageInfo struct {
+	Id       int64     `json:"id"`
+	Text     string    `json:"text"`
+	SenderId int64     `json:"sender_id"`
+	SentAt   time.Time `json:"sent_at"`
+	IsRead   bool      `json:"is_read"`
+}
+
+type ChatInfo struct {
+	Id          int64        `json:"id"`
+	Name        string       `json:"name"`
+	LastMessage *MessageInfo `json:"last_message,omitempty"`
+	UnreadCount int          `json:"unread_count"`
+}

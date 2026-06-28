@@ -103,7 +103,10 @@ func (s *ChatRepositoryTestSuite) applyMigrations(ctx context.Context) {
 			chat_id INTEGER REFERENCES chats(id) ON DELETE CASCADE,
 			sender_id INTEGER REFERENCES users(id),
 			message TEXT NOT NULL,
-			sent_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+			sent_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			is_edited BOOLEAN NOT NULL DEFAULT FALSE,
+			is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+			is_read BOOLEAN NOT NULL DEFAULT FALSE
 		)`,
 	}
 	for _, m := range migrations {

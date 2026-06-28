@@ -44,6 +44,32 @@ type ChatRepository interface {
 		ctx context.Context,
 		message domain.Messages,
 	) error
+
+	EditMessage(
+		ctx context.Context,
+		messageID int64,
+		text string,
+	) error
+	SoftDeleteMessage(
+		ctx context.Context,
+		messageID int64,
+	) error
+	MarkMessagesAsRead(
+		ctx context.Context,
+		chatID int64,
+		userID int64,
+		lastReadMessageID int64,
+	) error
+	GetChatMessagesPaginated(
+		ctx context.Context,
+		chatID int64,
+		lastMessageID *int64,
+		limit int,
+	) ([]domain.Messages, error)
+	GetUserChatsExtended(
+		ctx context.Context,
+		userID int64,
+	) ([]domain.ChatInfo, error)
 }
 
 func NewChatService(chatRepository ChatRepository) *ChatService {

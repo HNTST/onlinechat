@@ -1,0 +1,3 @@
+ALTER TABLE messages DROP COLUMN IF EXISTS is_edited;
+ALTER TABLE messages DROP COLUMN IF EXISTS is_deleted;
+ALTER TABLE messages DROP COLUMN IF EXISTS is_read;

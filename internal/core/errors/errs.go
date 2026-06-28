@@ -13,5 +13,6 @@ var (
 	ErrInvalidArgument = errors.New("неверный аргумент")
 	ErrConfict         = errors.New("конфликт")
 
-	ErrChatNotExists = errors.New("не существует")
+	ErrChatNotExists    = errors.New("не существует")
+	ErrMessageNotFound  = errors.New("сообщение не найдено")
 )

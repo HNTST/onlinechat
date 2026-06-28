@@ -50,3 +50,28 @@ func (m *mockChatRepo) SaveMessage(ctx context.Context, message domain.Messages)
 	args := m.Called(ctx, message)
 	return args.Error(0)
 }
+
+func (m *mockChatRepo) EditMessage(ctx context.Context, messageID int64, text string) error {
+	args := m.Called(ctx, messageID, text)
+	return args.Error(0)
+}
+
+func (m *mockChatRepo) SoftDeleteMessage(ctx context.Context, messageID int64) error {
+	args := m.Called(ctx, messageID)
+	return args.Error(0)
+}
+
+func (m *mockChatRepo) MarkMessagesAsRead(ctx context.Context, chatID, userID, lastReadMessageID int64) error {
+	args := m.Called(ctx, chatID, userID, lastReadMessageID)
+	return args.Error(0)
+}
+
+func (m *mockChatRepo) GetChatMessagesPaginated(ctx context.Context, chatID int64, lastMessageID *int64, limit int) ([]domain.Messages, error) {
+	args := m.Called(ctx, chatID, lastMessageID, limit)
+	return args.Get(0).([]domain.Messages), args.Error(1)
+}
+
+func (m *mockChatRepo) GetUserChatsExtended(ctx context.Context, userID int64) ([]domain.ChatInfo, error) {
+	args := m.Called(ctx, userID)
+	return args.Get(0).([]domain.ChatInfo), args.Error(1)
+}

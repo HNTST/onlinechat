@@ -13,3 +13,16 @@ func (s *ChatService) GetChatMessages(ctx context.Context, chat_id int64) ([]dom
 	}
 	return messages, nil
 }
+
+func (s *ChatService) GetChatMessagesPaginated(
+	ctx context.Context,
+	chatID int64,
+	lastMessageID *int64,
+	limit int,
+) ([]domain.Messages, error) {
+	messages, err := s.chatRepository.GetChatMessagesPaginated(ctx, chatID, lastMessageID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("get chat messages paginated: %w", err)
+	}
+	return messages, nil
+}

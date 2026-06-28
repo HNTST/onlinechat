@@ -5,6 +5,7 @@ import (
 	core_logger "discord/internal/core/logger"
 	core_http_response "discord/internal/core/transport/response"
 	"net/http"
+	"time"
 )
 
 type GetUserChatsResponse struct {
@@ -15,15 +16,32 @@ type ChatDTO struct {
 	Name string `json:"name"`
 }
 
-// GetUserChats returns all chats for a user
+type GetUserChatsExtendedResponse struct {
+	Chats []ChatExtendedDTO `json:"chats"`
+}
+type LastMessageDTO struct {
+	Id       int64     `json:"id"`
+	Text     string    `json:"text"`
+	SenderId int64     `json:"sender_id"`
+	SentAt   time.Time `json:"sent_at"`
+	IsRead   bool      `json:"is_read"`
+}
+type ChatExtendedDTO struct {
+	Id          int64           `json:"id"`
+	Name        string          `json:"name"`
+	LastMessage *LastMessageDTO `json:"last_message,omitempty"`
+	UnreadCount int             `json:"unread_count"`
+}
+
+// GetUserChats returns all chats for a user with last message and unread count
 //
 //	@Summary		Чаты пользователя
-//	@Description	Получение всех чатов, в которых состоит пользователь
+//	@Description	Получение всех чатов пользователя с последним сообщением и счётчиком непрочитанных
 //	@Tags			v2 / Чаты
 //	@Accept			json
 //	@Produce		json
 //	@Param			user_id	query		int	true	"ID пользователя"
-//	@Success		200		{object}	GetUserChatsResponse
+//	@Success		200		{object}	GetUserChatsExtendedResponse
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v2/chats [get]
 func (h *ChatHttpHandler) GetUserChats(w http.ResponseWriter, r *http.Request) {
@@ -42,14 +60,29 @@ func (h *ChatHttpHandler) GetUserChats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	chats, err := h.chatService.GetUserChats(ctx, userID)
+	chats, err := h.chatService.GetUserChatsExtended(ctx, userID)
 	if err != nil {
 		responseHandler.ErrorResponse(err, "failed to get user's chats")
 		return
 	}
-	dtos := make([]ChatDTO, len(chats))
+	dtos := make([]ChatExtendedDTO, len(chats))
 	for i, c := range chats {
-		dtos[i] = ChatDTO{Id: c.Id, Name: c.Name}
+		var lm *LastMessageDTO
+		if c.LastMessage != nil {
+			lm = &LastMessageDTO{
+				Id:       c.LastMessage.Id,
+				Text:     c.LastMessage.Text,
+				SenderId: c.LastMessage.SenderId,
+				SentAt:   c.LastMessage.SentAt,
+				IsRead:   c.LastMessage.IsRead,
+			}
+		}
+		dtos[i] = ChatExtendedDTO{
+			Id:          c.Id,
+			Name:        c.Name,
+			LastMessage: lm,
+			UnreadCount: c.UnreadCount,
+		}
 	}
-	responseHandler.JSONResponse(GetUserChatsResponse{Chats: dtos}, http.StatusOK)
+	responseHandler.JSONResponse(GetUserChatsExtendedResponse{Chats: dtos}, http.StatusOK)
 }

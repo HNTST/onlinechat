@@ -28,6 +28,14 @@ func (s *ChatRepositoryTestSuite) TestSaveMessage_Success() {
 		"SELECT COUNT(*) FROM messages WHERE chat_id=$1", chatID).Scan(&count)
 	s.Require().NoError(err)
 	s.Require().Equal(1, count)
+
+	var isEdited, isDeleted, isRead bool
+	err = s.pool.QueryRow(context.Background(),
+		"SELECT is_edited, is_deleted, is_read FROM messages WHERE chat_id=$1", chatID).Scan(&isEdited, &isDeleted, &isRead)
+	s.Require().NoError(err)
+	s.Require().False(isEdited)
+	s.Require().False(isDeleted)
+	s.Require().False(isRead)
 }
 
 
