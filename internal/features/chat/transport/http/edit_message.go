@@ -25,7 +25,8 @@ type EditMessageRequest struct {
 //	@Param			message_id	path		int					true	"ID сообщения"
 //	@Param			request		body		EditMessageRequest	true	"Новый текст"
 //	@Success		200			{object}	object{}
-//	@Failure		400			{object}	object{}
+//	@Failure		400	{object}	object{}
+//	@Failure		404	{object}	object{}
 //	@Router			/api/v2/chat/message/{message_id} [put]
 func (h *ChatHttpHandler) EditMessage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

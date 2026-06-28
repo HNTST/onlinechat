@@ -17,8 +17,9 @@ import (
 //	@Accept			json
 //	@Produce		json
 //	@Param			message_id	path		int	true	"ID сообщения"
-//	@Success		200			{object}	object{}
-//	@Failure		400			{object}	object{}
+//	@Success		200	{object}	object{}
+//	@Failure		400	{object}	object{}
+//	@Failure		404	{object}	object{}
 //	@Router			/api/v2/chat/message/{message_id} [delete]
 func (h *ChatHttpHandler) DeleteMessage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

@@ -102,7 +102,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/discord_internal_core_domain.Chat"
+                                "$ref": "#/definitions/domain.Chat"
                             }
                         }
                     },
@@ -240,7 +240,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/discord_internal_core_domain.Messages"
+                                "$ref": "#/definitions/domain.Messages"
                             }
                         }
                     },
@@ -279,7 +279,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/discord_internal_core_domain.User"
+                            "$ref": "#/definitions/domain.User"
                         }
                     },
                     "400": {
@@ -484,7 +484,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_features_chat_transport_http.SaveChatRequest"
+                            "$ref": "#/definitions/chat_transport_http.SaveChatRequest"
                         }
                     }
                 ],
@@ -492,7 +492,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/internal_features_chat_transport_http.SaveChatResponse"
+                            "$ref": "#/definitions/chat_transport_http.SaveChatResponse"
                         }
                     },
                     "400": {
@@ -524,13 +524,155 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_features_chat_transport_http.SaveMessageRequest"
+                            "$ref": "#/definitions/chat_transport_http.SaveMessageRequest"
                         }
                     }
                 ],
                 "responses": {
                     "201": {
                         "description": "Created",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/chat/message/{message_id}": {
+            "put": {
+                "description": "Редактирование текста сообщения (устанавливает is_edited=true)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2 / Чаты"
+                ],
+                "summary": "Редактирование сообщения",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID сообщения",
+                        "name": "message_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Новый текст",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/chat_transport_http.EditMessageRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Помечает сообщение как удалённое (is_deleted=true, текст очищается)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2 / Чаты"
+                ],
+                "summary": "Мягкое удаление сообщения",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID сообщения",
+                        "name": "message_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/chat/messages/read": {
+            "post": {
+                "description": "Помечает все чужие сообщения в чате до указанного ID как прочитанные",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2 / Чаты"
+                ],
+                "summary": "Отметка о прочтении",
+                "parameters": [
+                    {
+                        "description": "Данные для отметки",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/chat_transport_http.MarkMessagesAsReadRequest"
+                        }
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID пользователя",
+                        "name": "user_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "type": "object"
                         }
@@ -571,7 +713,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_features_chat_transport_http.AddUserToChatRequest"
+                            "$ref": "#/definitions/chat_transport_http.AddUserToChatRequest"
                         }
                     }
                 ],
@@ -579,7 +721,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_features_chat_transport_http.AddUserToChatResponse"
+                            "$ref": "#/definitions/chat_transport_http.AddUserToChatResponse"
                         }
                     },
                     "400": {
@@ -593,7 +735,7 @@ const docTemplate = `{
         },
         "/api/v2/chats": {
             "get": {
-                "description": "Получение всех чатов, в которых состоит пользователь",
+                "description": "Получение всех чатов пользователя с последним сообщением и счётчиком непрочитанных",
                 "consumes": [
                     "application/json"
                 ],
@@ -617,7 +759,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_features_chat_transport_http.GetUserChatsResponse"
+                            "$ref": "#/definitions/chat_transport_http.GetUserChatsExtendedResponse"
                         }
                     },
                     "400": {
@@ -655,7 +797,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_features_chat_transport_http.GetChatMembersResponse"
+                            "$ref": "#/definitions/chat_transport_http.GetChatMembersResponse"
                         }
                     },
                     "400": {
@@ -669,7 +811,7 @@ const docTemplate = `{
         },
         "/api/v2/messages": {
             "get": {
-                "description": "Получение всех сообщений в чате",
+                "description": "Получение сообщений в чате с курсорной пагинацией",
                 "consumes": [
                     "application/json"
                 ],
@@ -687,13 +829,25 @@ const docTemplate = `{
                         "name": "chat_id",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID последнего сообщения для пагинации",
+                        "name": "last_message_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Лимит сообщений (default 50)",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_features_chat_transport_http.GetChatMessagesResponse"
+                            "$ref": "#/definitions/chat_transport_http.GetChatMessagesResponse"
                         }
                     },
                     "400": {
@@ -731,7 +885,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_features_user_transport_http.GetUserResponse"
+                            "$ref": "#/definitions/users_transport_http.GetUserResponse"
                         }
                     },
                     "400": {
@@ -761,7 +915,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_features_user_transport_http.SaveUserRequest"
+                            "$ref": "#/definitions/users_transport_http.SaveUserRequest"
                         }
                     }
                 ],
@@ -769,7 +923,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/internal_features_user_transport_http.SaveUserResponse"
+                            "$ref": "#/definitions/users_transport_http.SaveUserResponse"
                         }
                     },
                     "400": {
@@ -848,7 +1002,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/internal_features_files_transport_http.UploadAvatarResponse"
+                            "$ref": "#/definitions/files_transport_http.UploadAvatarResponse"
                         }
                     },
                     "400": {
@@ -886,7 +1040,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_features_user_transport_http.GetUserIDResponse"
+                            "$ref": "#/definitions/users_transport_http.GetUserIDResponse"
                         }
                     },
                     "400": {
@@ -926,58 +1080,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "discord_internal_core_domain.Chat": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "discord_internal_core_domain.Messages": {
-            "type": "object",
-            "properties": {
-                "chat_id": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "sender_id": {
-                    "type": "integer"
-                },
-                "sent_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "discord_internal_core_domain.User": {
-            "type": "object",
-            "properties": {
-                "avatar_id": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "password": {
-                    "type": "string"
-                },
-                "reg": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "internal_features_chat_transport_http.AddUserToChatRequest": {
+        "chat_transport_http.AddUserToChatRequest": {
             "type": "object",
             "required": [
                 "users_ids"
@@ -991,7 +1094,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_features_chat_transport_http.AddUserToChatResponse": {
+        "chat_transport_http.AddUserToChatResponse": {
             "type": "object",
             "properties": {
                 "chat_id": {
@@ -1007,18 +1110,35 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_features_chat_transport_http.ChatDTO": {
+        "chat_transport_http.ChatExtendedDTO": {
             "type": "object",
             "properties": {
                 "id": {
                     "type": "integer"
                 },
+                "last_message": {
+                    "$ref": "#/definitions/chat_transport_http.LastMessageDTO"
+                },
                 "name": {
+                    "type": "string"
+                },
+                "unread_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "chat_transport_http.EditMessageRequest": {
+            "type": "object",
+            "required": [
+                "text"
+            ],
+            "properties": {
+                "text": {
                     "type": "string"
                 }
             }
         },
-        "internal_features_chat_transport_http.GetChatMembersResponse": {
+        "chat_transport_http.GetChatMembersResponse": {
             "type": "object",
             "properties": {
                 "members": {
@@ -1029,31 +1149,78 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_features_chat_transport_http.GetChatMessagesResponse": {
+        "chat_transport_http.GetChatMessagesResponse": {
             "type": "object",
             "properties": {
                 "messages": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_features_chat_transport_http.MessageDTO"
+                        "$ref": "#/definitions/chat_transport_http.MessageDTO"
                     }
                 }
             }
         },
-        "internal_features_chat_transport_http.GetUserChatsResponse": {
+        "chat_transport_http.GetUserChatsExtendedResponse": {
             "type": "object",
             "properties": {
                 "chats": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_features_chat_transport_http.ChatDTO"
+                        "$ref": "#/definitions/chat_transport_http.ChatExtendedDTO"
                     }
                 }
             }
         },
-        "internal_features_chat_transport_http.MessageDTO": {
+        "chat_transport_http.LastMessageDTO": {
             "type": "object",
             "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "is_read": {
+                    "type": "boolean"
+                },
+                "sender_id": {
+                    "type": "integer"
+                },
+                "sent_at": {
+                    "type": "string"
+                },
+                "text": {
+                    "type": "string"
+                }
+            }
+        },
+        "chat_transport_http.MarkMessagesAsReadRequest": {
+            "type": "object",
+            "required": [
+                "chat_id",
+                "last_read_message_id"
+            ],
+            "properties": {
+                "chat_id": {
+                    "type": "integer"
+                },
+                "last_read_message_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "chat_transport_http.MessageDTO": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "is_deleted": {
+                    "type": "boolean"
+                },
+                "is_edited": {
+                    "type": "boolean"
+                },
+                "is_read": {
+                    "type": "boolean"
+                },
                 "message": {
                     "type": "string"
                 },
@@ -1065,7 +1232,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_features_chat_transport_http.SaveChatRequest": {
+        "chat_transport_http.SaveChatRequest": {
             "type": "object",
             "required": [
                 "author",
@@ -1084,7 +1251,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_features_chat_transport_http.SaveChatResponse": {
+        "chat_transport_http.SaveChatResponse": {
             "type": "object",
             "properties": {
                 "chat_id": {
@@ -1092,7 +1259,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_features_chat_transport_http.SaveMessageRequest": {
+        "chat_transport_http.SaveMessageRequest": {
             "type": "object",
             "required": [
                 "chat_id",
@@ -1111,7 +1278,67 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_features_files_transport_http.UploadAvatarResponse": {
+        "domain.Chat": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.Messages": {
+            "type": "object",
+            "properties": {
+                "chat_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_deleted": {
+                    "type": "boolean"
+                },
+                "is_edited": {
+                    "type": "boolean"
+                },
+                "is_read": {
+                    "type": "boolean"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "sender_id": {
+                    "type": "integer"
+                },
+                "sent_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.User": {
+            "type": "object",
+            "properties": {
+                "avatar_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "reg": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "files_transport_http.UploadAvatarResponse": {
             "type": "object",
             "properties": {
                 "file_id": {
@@ -1119,7 +1346,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_features_user_transport_http.GetUserIDResponse": {
+        "users_transport_http.GetUserIDResponse": {
             "type": "object",
             "properties": {
                 "user_id": {
@@ -1127,7 +1354,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_features_user_transport_http.GetUserResponse": {
+        "users_transport_http.GetUserResponse": {
             "type": "object",
             "properties": {
                 "avatar_id": {
@@ -1144,7 +1371,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_features_user_transport_http.SaveUserRequest": {
+        "users_transport_http.SaveUserRequest": {
             "type": "object",
             "required": [
                 "username"
@@ -1161,7 +1388,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_features_user_transport_http.SaveUserResponse": {
+        "users_transport_http.SaveUserResponse": {
             "type": "object",
             "properties": {
                 "avatar_id": {

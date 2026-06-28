@@ -1,39 +1,6 @@
 basePath: /
 definitions:
-  discord_internal_core_domain.Chat:
-    properties:
-      id:
-        type: integer
-      name:
-        type: string
-    type: object
-  discord_internal_core_domain.Messages:
-    properties:
-      chat_id:
-        type: integer
-      id:
-        type: integer
-      message:
-        type: string
-      sender_id:
-        type: integer
-      sent_at:
-        type: string
-    type: object
-  discord_internal_core_domain.User:
-    properties:
-      avatar_id:
-        type: integer
-      id:
-        type: integer
-      password:
-        type: string
-      reg:
-        type: string
-      username:
-        type: string
-    type: object
-  internal_features_chat_transport_http.AddUserToChatRequest:
+  chat_transport_http.AddUserToChatRequest:
     properties:
       users_ids:
         items:
@@ -42,7 +9,7 @@ definitions:
     required:
     - users_ids
     type: object
-  internal_features_chat_transport_http.AddUserToChatResponse:
+  chat_transport_http.AddUserToChatResponse:
     properties:
       chat_id:
         format: int64
@@ -53,36 +20,78 @@ definitions:
           type: integer
         type: array
     type: object
-  internal_features_chat_transport_http.ChatDTO:
+  chat_transport_http.ChatExtendedDTO:
     properties:
       id:
         type: integer
+      last_message:
+        $ref: '#/definitions/chat_transport_http.LastMessageDTO'
       name:
         type: string
+      unread_count:
+        type: integer
     type: object
-  internal_features_chat_transport_http.GetChatMembersResponse:
+  chat_transport_http.EditMessageRequest:
+    properties:
+      text:
+        type: string
+    required:
+    - text
+    type: object
+  chat_transport_http.GetChatMembersResponse:
     properties:
       members:
         items:
           type: integer
         type: array
     type: object
-  internal_features_chat_transport_http.GetChatMessagesResponse:
+  chat_transport_http.GetChatMessagesResponse:
     properties:
       messages:
         items:
-          $ref: '#/definitions/internal_features_chat_transport_http.MessageDTO'
+          $ref: '#/definitions/chat_transport_http.MessageDTO'
         type: array
     type: object
-  internal_features_chat_transport_http.GetUserChatsResponse:
+  chat_transport_http.GetUserChatsExtendedResponse:
     properties:
       chats:
         items:
-          $ref: '#/definitions/internal_features_chat_transport_http.ChatDTO'
+          $ref: '#/definitions/chat_transport_http.ChatExtendedDTO'
         type: array
     type: object
-  internal_features_chat_transport_http.MessageDTO:
+  chat_transport_http.LastMessageDTO:
     properties:
+      id:
+        type: integer
+      is_read:
+        type: boolean
+      sender_id:
+        type: integer
+      sent_at:
+        type: string
+      text:
+        type: string
+    type: object
+  chat_transport_http.MarkMessagesAsReadRequest:
+    properties:
+      chat_id:
+        type: integer
+      last_read_message_id:
+        type: integer
+    required:
+    - chat_id
+    - last_read_message_id
+    type: object
+  chat_transport_http.MessageDTO:
+    properties:
+      id:
+        type: integer
+      is_deleted:
+        type: boolean
+      is_edited:
+        type: boolean
+      is_read:
+        type: boolean
       message:
         type: string
       sender_id:
@@ -90,7 +99,7 @@ definitions:
       sent_at:
         type: string
     type: object
-  internal_features_chat_transport_http.SaveChatRequest:
+  chat_transport_http.SaveChatRequest:
     properties:
       author:
         type: integer
@@ -103,12 +112,12 @@ definitions:
     - chat_name
     - target_user
     type: object
-  internal_features_chat_transport_http.SaveChatResponse:
+  chat_transport_http.SaveChatResponse:
     properties:
       chat_id:
         type: integer
     type: object
-  internal_features_chat_transport_http.SaveMessageRequest:
+  chat_transport_http.SaveMessageRequest:
     properties:
       chat_id:
         type: integer
@@ -121,17 +130,56 @@ definitions:
     - message
     - sender_id
     type: object
-  internal_features_files_transport_http.UploadAvatarResponse:
+  domain.Chat:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  domain.Messages:
+    properties:
+      chat_id:
+        type: integer
+      id:
+        type: integer
+      is_deleted:
+        type: boolean
+      is_edited:
+        type: boolean
+      is_read:
+        type: boolean
+      message:
+        type: string
+      sender_id:
+        type: integer
+      sent_at:
+        type: string
+    type: object
+  domain.User:
+    properties:
+      avatar_id:
+        type: integer
+      id:
+        type: integer
+      password:
+        type: string
+      reg:
+        type: string
+      username:
+        type: string
+    type: object
+  files_transport_http.UploadAvatarResponse:
     properties:
       file_id:
         type: integer
     type: object
-  internal_features_user_transport_http.GetUserIDResponse:
+  users_transport_http.GetUserIDResponse:
     properties:
       user_id:
         type: integer
     type: object
-  internal_features_user_transport_http.GetUserResponse:
+  users_transport_http.GetUserResponse:
     properties:
       avatar_id:
         type: integer
@@ -142,7 +190,7 @@ definitions:
       username:
         type: string
     type: object
-  internal_features_user_transport_http.SaveUserRequest:
+  users_transport_http.SaveUserRequest:
     properties:
       password:
         description: Временно не обязательный
@@ -154,7 +202,7 @@ definitions:
     required:
     - username
     type: object
-  internal_features_user_transport_http.SaveUserResponse:
+  users_transport_http.SaveUserResponse:
     properties:
       avatar_id:
         type: integer
@@ -228,7 +276,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/discord_internal_core_domain.Chat'
+              $ref: '#/definitions/domain.Chat'
             type: array
         "400":
           description: Bad Request
@@ -319,7 +367,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/discord_internal_core_domain.Messages'
+              $ref: '#/definitions/domain.Messages'
             type: array
         "400":
           description: Bad Request
@@ -345,7 +393,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/discord_internal_core_domain.User'
+            $ref: '#/definitions/domain.User'
         "400":
           description: Bad Request
           schema:
@@ -479,14 +527,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_features_chat_transport_http.SaveChatRequest'
+          $ref: '#/definitions/chat_transport_http.SaveChatRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_features_chat_transport_http.SaveChatResponse'
+            $ref: '#/definitions/chat_transport_http.SaveChatResponse'
         "400":
           description: Bad Request
           schema:
@@ -510,14 +558,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_features_chat_transport_http.AddUserToChatRequest'
+          $ref: '#/definitions/chat_transport_http.AddUserToChatRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_features_chat_transport_http.AddUserToChatResponse'
+            $ref: '#/definitions/chat_transport_http.AddUserToChatResponse'
         "400":
           description: Bad Request
           schema:
@@ -536,7 +584,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_features_chat_transport_http.SaveMessageRequest'
+          $ref: '#/definitions/chat_transport_http.SaveMessageRequest'
       produces:
       - application/json
       responses:
@@ -551,11 +599,106 @@ paths:
       summary: Отправка сообщения
       tags:
       - v2 / Чаты
+  /api/v2/chat/message/{message_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Помечает сообщение как удалённое (is_deleted=true, текст очищается)
+      parameters:
+      - description: ID сообщения
+        in: path
+        name: message_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            type: object
+      summary: Мягкое удаление сообщения
+      tags:
+      - v2 / Чаты
+    put:
+      consumes:
+      - application/json
+      description: Редактирование текста сообщения (устанавливает is_edited=true)
+      parameters:
+      - description: ID сообщения
+        in: path
+        name: message_id
+        required: true
+        type: integer
+      - description: Новый текст
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/chat_transport_http.EditMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            type: object
+      summary: Редактирование сообщения
+      tags:
+      - v2 / Чаты
+  /api/v2/chat/messages/read:
+    post:
+      consumes:
+      - application/json
+      description: Помечает все чужие сообщения в чате до указанного ID как прочитанные
+      parameters:
+      - description: Данные для отметки
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/chat_transport_http.MarkMessagesAsReadRequest'
+      - description: ID пользователя
+        in: query
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Отметка о прочтении
+      tags:
+      - v2 / Чаты
   /api/v2/chats:
     get:
       consumes:
       - application/json
-      description: Получение всех чатов, в которых состоит пользователь
+      description: Получение всех чатов пользователя с последним сообщением и счётчиком
+        непрочитанных
       parameters:
       - description: ID пользователя
         in: query
@@ -568,7 +711,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_features_chat_transport_http.GetUserChatsResponse'
+            $ref: '#/definitions/chat_transport_http.GetUserChatsExtendedResponse'
         "400":
           description: Bad Request
           schema:
@@ -593,7 +736,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_features_chat_transport_http.GetChatMembersResponse'
+            $ref: '#/definitions/chat_transport_http.GetChatMembersResponse'
         "400":
           description: Bad Request
           schema:
@@ -605,12 +748,20 @@ paths:
     get:
       consumes:
       - application/json
-      description: Получение всех сообщений в чате
+      description: Получение сообщений в чате с курсорной пагинацией
       parameters:
       - description: ID чата
         in: query
         name: chat_id
         required: true
+        type: integer
+      - description: ID последнего сообщения для пагинации
+        in: query
+        name: last_message_id
+        type: integer
+      - description: Лимит сообщений (default 50)
+        in: query
+        name: limit
         type: integer
       produces:
       - application/json
@@ -618,7 +769,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_features_chat_transport_http.GetChatMessagesResponse'
+            $ref: '#/definitions/chat_transport_http.GetChatMessagesResponse'
         "400":
           description: Bad Request
           schema:
@@ -643,7 +794,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_features_user_transport_http.GetUserResponse'
+            $ref: '#/definitions/users_transport_http.GetUserResponse'
         "400":
           description: Bad Request
           schema:
@@ -661,14 +812,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_features_user_transport_http.SaveUserRequest'
+          $ref: '#/definitions/users_transport_http.SaveUserRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_features_user_transport_http.SaveUserResponse'
+            $ref: '#/definitions/users_transport_http.SaveUserResponse'
         "400":
           description: Bad Request
           schema:
@@ -722,7 +873,7 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_features_files_transport_http.UploadAvatarResponse'
+            $ref: '#/definitions/files_transport_http.UploadAvatarResponse'
         "400":
           description: Bad Request
           schema:
@@ -747,7 +898,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_features_user_transport_http.GetUserIDResponse'
+            $ref: '#/definitions/users_transport_http.GetUserIDResponse'
         "400":
           description: Bad Request
           schema:

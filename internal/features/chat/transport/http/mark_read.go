@@ -21,6 +21,7 @@ type MarkMessagesAsReadRequest struct {
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		MarkMessagesAsReadRequest	true	"Данные для отметки"
+//	@Param			user_id	query		int	true	"ID пользователя"
 //	@Success		200		{object}	object{}
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v2/chat/messages/read [post]
