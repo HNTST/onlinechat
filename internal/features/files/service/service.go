@@ -12,6 +12,7 @@ type FileService struct {
 }
 
 type FileRepository interface {
+	Transaction(ctx context.Context, fn func(txCtx context.Context) error) error
 	SaveFile(ctx context.Context, file domain.Files) (domain.Files, error)
 	UpdateUserAvatar(ctx context.Context, userID, fileID int64) error
 	GetFileByID(ctx context.Context, id int64) (*domain.Files, error)
@@ -20,6 +21,7 @@ type FileRepository interface {
 type FileStorage interface {
 	Upload(ctx context.Context, fileName, contentType string, reader io.Reader, size int64) (string, error)
 	GetAvatarStream(ctx context.Context, objectName string) (io.ReadCloser, error)
+	Remove(ctx context.Context, objectName string) error
 }
 
 func NewFileService(fileRepository FileRepository, fileStorage FileStorage) *FileService {

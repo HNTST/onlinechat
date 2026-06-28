@@ -45,6 +45,10 @@ func (m *MinioStorage) Upload(ctx context.Context, fileName, contentType string,
 	return info.Key, nil
 }
 
+func (m *MinioStorage) Remove(ctx context.Context, objectName string) error {
+	return m.mc.RemoveObject(ctx, m.cfg.BucketName, objectName, minio.RemoveObjectOptions{})
+}
+
 func (m *MinioStorage) GetAvatarStream(ctx context.Context, objectName string) (io.ReadCloser, error) {
 	obj, err := m.mc.GetObject(ctx, m.cfg.BucketName, objectName, minio.GetObjectOptions{})
 	if err != nil {
