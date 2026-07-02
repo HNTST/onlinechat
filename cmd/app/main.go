@@ -44,7 +44,6 @@ func main() {
 	logger := core_logger.NewLogger()
 	cfg := core_config.Load()
 
-	// Старые обработчики переписанные под новый HTTP
 	logger.Info("Подлючение к базе данных posgres")
 	pgPool, err := core_postgres_pool.NewConnectionPool(ctx, cfg.Config_DB)
 	if err != nil {
