@@ -25,7 +25,7 @@ func (m *MinioClient) InitMinio() error {
 
 	client, err := minio.New(m.cfg.Host, &minio.Options{
 		Creds:  credentials.NewStaticV4(m.cfg.RootUser, m.cfg.RootPassword, ""),
-		Secure: false,
+		Secure: true,
 	})
 	if err != nil {
 		return err
