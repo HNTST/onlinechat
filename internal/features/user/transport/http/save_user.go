@@ -1,8 +1,8 @@
 package users_transport_http
 
 import (
-	core_errors "discord/internal/core/errors"
 	"discord/internal/core/domain"
+	core_errors "discord/internal/core/errors"
 	core_logger "discord/internal/core/logger"
 	core_http_request "discord/internal/core/transport/request"
 	core_http_response "discord/internal/core/transport/response"
@@ -10,7 +10,7 @@ import (
 )
 
 type SaveUserRequest struct {
-	Username string `json:"username" validate:"required, min=3,max=100"`
+	Username string `json:"username" validate:"required,min=3,max=100"`
 	Password string `json:"password" validate:"omitempty,min=8"` // Временно не обязательный
 }
 type SaveUserResponse UserDTOResponse
