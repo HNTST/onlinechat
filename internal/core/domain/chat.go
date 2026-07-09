@@ -3,8 +3,9 @@ package domain
 import "time"
 
 type Chat struct {
-	Id   int64  `json:"id"`
-	Name string `json:"name"`
+	Id      int64  `json:"id"`
+	Name    string `json:"name"`
+	IsGroup bool   `json:"is_group,omitempty"`
 }
 
 type MessageInfo struct {
@@ -18,6 +19,7 @@ type MessageInfo struct {
 type ChatInfo struct {
 	Id          int64        `json:"id"`
 	Name        string       `json:"name"`
+	IsGroup     bool         `json:"is_group,omitempty"`
 	LastMessage *MessageInfo `json:"last_message,omitempty"`
 	UnreadCount int          `json:"unread_count"`
 }

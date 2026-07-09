@@ -12,6 +12,7 @@ type SaveChatRequest struct {
 	ChatName   string `json:"chat_name" validate:"required"`
 	Author     int64  `json:"author" validate:"required"`
 	TargetUser int64  `json:"target_user" validate:"required"`
+	IsGroup    bool   `json:"is_group"`
 }
 type SaveChatResponse struct {
 	Id int64 `json:"chat_id"`
@@ -55,6 +56,7 @@ func (h *ChatHttpHandler) SaveChat(
 		request.ChatName,
 		request.Author,
 		request.TargetUser,
+		request.IsGroup,
 	)
 	if err != nil {
 		responseHandler.ErrorResponse(

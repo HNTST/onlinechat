@@ -12,6 +12,7 @@ func (s *ChatService) SaveChat(
 	name string,
 	user_id,
 	target_user_id int64,
+	is_group bool,
 ) (int64, error) {
 	var (
 		chat_id int64
@@ -23,18 +24,24 @@ func (s *ChatService) SaveChat(
 		func(txCtx context.Context,
 		) error {
 
-			chat_id, err = s.chatRepository.CheckExistsChat(
-				txCtx,
-				user_id,
-				target_user_id,
-			)
-			if err != nil {
-				if !errors.Is(err, core_errors.ErrChatNotExists) {
-					return fmt.Errorf("check existing chat: %w", err)
+			if !is_group {
+				chat_id, err = s.chatRepository.CheckExistsChat(
+					txCtx,
+					user_id,
+					target_user_id,
+				)
+				if err != nil {
+					if !errors.Is(err, core_errors.ErrChatNotExists) {
+						return fmt.Errorf("check existing chat: %w", err)
+					}
 				}
+			}
+
+			if chat_id == 0 {
 				chat_id, err = s.chatRepository.CreateNewChat(
 					txCtx,
 					name,
+					is_group,
 				)
 				if err != nil {
 					return fmt.Errorf("create new chat: %w", err)

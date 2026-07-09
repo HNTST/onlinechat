@@ -91,10 +91,11 @@ func (s *ChatRepositoryTestSuite) applyMigrations(ctx context.Context) {
 		)`,
 		`CREATE TABLE IF NOT EXISTS chats (
 			id SERIAL PRIMARY KEY,
-			name VARCHAR(255) NOT NULL
+			name VARCHAR(255) NOT NULL,
+			is_group BOOLEAN NOT NULL DEFAULT false
 		)`,
 		`CREATE TABLE IF NOT EXISTS chat_members (
-			chat_id INTEGER REFERENCES chats(id),
+			chat_id INTEGER REFERENCES chats(id) ON DELETE CASCADE,
 			user_id INTEGER REFERENCES users(id),
 			PRIMARY KEY (chat_id, user_id)
 		)`,

@@ -18,6 +18,7 @@ type ChatRepository interface {
 	CreateNewChat(
 		ctx context.Context,
 		chat_name string,
+		is_group bool,
 	) (int64, error)
 	CheckExistsChat(
 		ctx context.Context,
@@ -70,6 +71,21 @@ type ChatRepository interface {
 		ctx context.Context,
 		userID int64,
 	) ([]domain.ChatInfo, error)
+
+	UpdateChatName(
+		ctx context.Context,
+		chatID int64,
+		newName string,
+	) error
+	DeleteChat(
+		ctx context.Context,
+		chatID int64,
+	) error
+	IsUserInChat(
+		ctx context.Context,
+		userID int64,
+		chatID int64,
+	) (bool, error)
 }
 
 func NewChatService(chatRepository ChatRepository) *ChatService {

@@ -15,6 +15,7 @@ func (r *ChatRepository) GetUserChatsExtended(ctx context.Context, userID int64)
 		SELECT
 			c.id,
 			c.name,
+			c.is_group,
 			lm.id,
 			lm.message,
 			lm.sender_id,
@@ -55,7 +56,7 @@ func (r *ChatRepository) GetUserChatsExtended(ctx context.Context, userID int64)
 			lmIsRead     sql.NullBool
 		)
 		if err := rows.Scan(
-			&ci.Id, &ci.Name,
+			&ci.Id, &ci.Name, &ci.IsGroup,
 			&lmID, &lmText, &lmSenderID, &lmSentAt, &lmIsRead,
 			&ci.UnreadCount,
 		); err != nil {

@@ -21,6 +21,7 @@ type ChatService interface {
 		name string,
 		user_id,
 		target_user_id int64,
+		is_group bool,
 	) (int64, error)
 	AddUserToChat(
 		ctx context.Context,
@@ -68,6 +69,17 @@ type ChatService interface {
 		ctx context.Context,
 		userID int64,
 	) ([]domain.ChatInfo, error)
+	RenameChat(
+		ctx context.Context,
+		chatID int64,
+		userID int64,
+		newName string,
+	) error
+	DeleteChat(
+		ctx context.Context,
+		chatID int64,
+		userID int64,
+	) error
 }
 
 func NewChatHttpHandler(
@@ -124,6 +136,16 @@ func (h *ChatHttpHandler) Routes() []core_http_server.Route {
 			Method:  http.MethodPatch,
 			Path:    "/chats/{chat_id}/messages/read-status",
 			Handler: h.MarkMessagesAsRead,
+		},
+		{
+			Method:  http.MethodPut,
+			Path:    "/chat/{chat_id}/name",
+			Handler: h.RenameChat,
+		},
+		{
+			Method:  http.MethodDelete,
+			Path:    "/chat/{chat_id}",
+			Handler: h.DeleteChat,
 		},
 	}
 }

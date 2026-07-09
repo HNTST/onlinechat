@@ -21,8 +21,8 @@ func (m *mockChatRepo) CheckExistsChat(ctx context.Context, userID, targetUserID
 	return args.Get(0).(int64), args.Error(1)
 }
 
-func (m *mockChatRepo) CreateNewChat(ctx context.Context, chatName string) (int64, error) {
-	args := m.Called(ctx, chatName)
+func (m *mockChatRepo) CreateNewChat(ctx context.Context, chatName string, isGroup bool) (int64, error) {
+	args := m.Called(ctx, chatName, isGroup)
 	return args.Get(0).(int64), args.Error(1)
 }
 
@@ -74,4 +74,19 @@ func (m *mockChatRepo) GetChatMessagesPaginated(ctx context.Context, chatID int6
 func (m *mockChatRepo) GetUserChatsExtended(ctx context.Context, userID int64) ([]domain.ChatInfo, error) {
 	args := m.Called(ctx, userID)
 	return args.Get(0).([]domain.ChatInfo), args.Error(1)
+}
+
+func (m *mockChatRepo) UpdateChatName(ctx context.Context, chatID int64, newName string) error {
+	args := m.Called(ctx, chatID, newName)
+	return args.Error(0)
+}
+
+func (m *mockChatRepo) DeleteChat(ctx context.Context, chatID int64) error {
+	args := m.Called(ctx, chatID)
+	return args.Error(0)
+}
+
+func (m *mockChatRepo) IsUserInChat(ctx context.Context, userID int64, chatID int64) (bool, error) {
+	args := m.Called(ctx, userID, chatID)
+	return args.Bool(0), args.Error(1)
 }

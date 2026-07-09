@@ -11,7 +11,7 @@ func (r *ChatRepository) GetUserChats(ctx context.Context, user_id int64) ([]dom
 	defer cancel()
 
 	query := `
-		SELECT c.id, c.name
+		SELECT c.id, c.name, c.is_group
 		FROM chats c
 		JOIN chat_members cm ON c.id = cm.chat_id
 		WHERE cm.user_id = $1
@@ -25,7 +25,7 @@ func (r *ChatRepository) GetUserChats(ctx context.Context, user_id int64) ([]dom
 	var result []domain.Chat
 	for rows.Next() {
 		var c domain.Chat
-		if err := rows.Scan(&c.Id, &c.Name); err != nil {
+		if err := rows.Scan(&c.Id, &c.Name, &c.IsGroup); err != nil {
 			return nil, fmt.Errorf("scan error: %w", err)
 		}
 		result = append(result, c)
