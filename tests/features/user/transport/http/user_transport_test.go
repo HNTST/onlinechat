@@ -25,11 +25,6 @@ type mockUsersService struct {
 	mock.Mock
 }
 
-func (m *mockUsersService) SaveUser(ctx context.Context, user domain.User) (domain.User, error) {
-	args := m.Called(ctx, user)
-	return args.Get(0).(domain.User), args.Error(1)
-}
-
 func (m *mockUsersService) GetUser(ctx context.Context, user_id *int) (domain.User, error) {
 	args := m.Called(ctx, user_id)
 	return args.Get(0).(domain.User), args.Error(1)

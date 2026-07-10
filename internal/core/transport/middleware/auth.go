@@ -14,6 +14,7 @@ const UserIDKey contextKey = "user_id"
 var authExemptPrefixes = []string{
 	"/swagger/",
 	"/api/v2/auth/login",
+	"/api/v2/auth/register",
 }
 
 func Auth(sessionValidator func(ctx context.Context, token string) (int64, error)) Middleware {

@@ -53,6 +53,38 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (str
 	return session.Token, user, nil
 }
 
+func (s *AuthService) Register(ctx context.Context, username, password string) (string, domain.User, error) {
+	user := domain.NewUserUninitialized(username, password)
+	if err := user.Validate(); err != nil {
+		return "", domain.User{}, fmt.Errorf("register: %w", core_errors.ErrInvalidArgument)
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", domain.User{}, fmt.Errorf("register: %w", err)
+	}
+	user.Password = string(hashedPassword)
+
+	savedUser, err := s.usersRepo.SaveUser(ctx, user)
+	if err != nil {
+		return "", domain.User{}, fmt.Errorf("register: %w", err)
+	}
+
+	token, err := generateSessionToken()
+	if err != nil {
+		return "", domain.User{}, fmt.Errorf("register: %w", err)
+	}
+
+	expiresAt := time.Now().UTC().Add(sessionTTL)
+
+	session, err := s.authRepo.CreateSession(ctx, savedUser.Id, token, expiresAt)
+	if err != nil {
+		return "", domain.User{}, fmt.Errorf("register: %w", err)
+	}
+
+	return session.Token, savedUser, nil
+}
+
 func (s *AuthService) Logout(ctx context.Context, token string) error {
 	return s.authRepo.DeleteSession(ctx, token)
 }

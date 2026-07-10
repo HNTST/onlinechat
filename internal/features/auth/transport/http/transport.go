@@ -12,11 +12,17 @@ type AuthRequest struct {
 	Password string `json:"password"`
 }
 
+type RegisterRequest struct {
+	Username string `json:"username" validate:"required,min=3,max=100"`
+	Password string `json:"password" validate:"required,min=8"`
+}
+
 type AuthHTTPHandler struct {
 	authService AuthService
 }
 
 type AuthService interface {
+	Register(ctx context.Context, username, password string) (token string, user domain.User, err error)
 	Login(ctx context.Context, username, password string) (token string, user domain.User, err error)
 	Logout(ctx context.Context, token string) error
 	ValidateSession(ctx context.Context, token string) (int64, error)
@@ -30,6 +36,11 @@ func NewAuthHTTPHandler(authService AuthService) *AuthHTTPHandler {
 
 func (h *AuthHTTPHandler) Routes() []core_http_server.Route {
 	return []core_http_server.Route{
+		{
+			Method:  http.MethodPost,
+			Path:    "/auth/register",
+			Handler: h.Register,
+		},
 		{
 			Method:  http.MethodPost,
 			Path:    "/auth/login",

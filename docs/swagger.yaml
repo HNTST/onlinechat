@@ -1,5 +1,25 @@
 basePath: /
 definitions:
+  auth_transport_http.AuthRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  auth_transport_http.RegisterRequest:
+    properties:
+      password:
+        minLength: 8
+        type: string
+      username:
+        maxLength: 100
+        minLength: 3
+        type: string
+    required:
+    - password
+    - username
+    type: object
   chat_transport_http.AddUserToChatRequest:
     properties:
       users_ids:
@@ -183,30 +203,6 @@ definitions:
         type: integer
     type: object
   users_transport_http.GetUserResponse:
-    properties:
-      avatar_id:
-        type: integer
-      id:
-        type: integer
-      reg:
-        type: string
-      username:
-        type: string
-    type: object
-  users_transport_http.SaveUserRequest:
-    properties:
-      password:
-        description: Временно не обязательный
-        minLength: 8
-        type: string
-      username:
-        maxLength: 100
-        minLength: 3
-        type: string
-    required:
-    - username
-    type: object
-  users_transport_http.SaveUserResponse:
     properties:
       avatar_id:
         type: integer
@@ -520,6 +516,71 @@ paths:
       summary: WebSocket-соединение
       tags:
       - v1 / WebSocket
+  /api/v2/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Вход по username/password, устанавливает HttpOnly cookie session_token
+      parameters:
+      - description: Данные для входа
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth_transport_http.AuthRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.User'
+        "401":
+          description: Unauthorized
+          schema:
+            type: object
+      summary: Аутентификация пользователя
+      tags:
+      - v2 / Аутентификация
+  /api/v2/auth/logout:
+    post:
+      description: Завершение сессии, удаление session_token cookie
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+      summary: Выход из системы
+      tags:
+      - v2 / Аутентификация
+  /api/v2/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Создание новой учётной записи с авто-логином (устанавливается session_token)
+      parameters:
+      - description: Данные для регистрации
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth_transport_http.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.User'
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Регистрация пользователя
+      tags:
+      - v2 / Аутентификация
   /api/v2/chat:
     post:
       consumes:
@@ -905,31 +966,6 @@ paths:
           schema:
             type: object
       summary: Получение пользователя
-      tags:
-      - v2 / Пользователи
-    post:
-      consumes:
-      - application/json
-      description: Создание новой учётной записи пользователя
-      parameters:
-      - description: Данные для регистрации
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/users_transport_http.SaveUserRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/users_transport_http.SaveUserResponse'
-        "400":
-          description: Bad Request
-          schema:
-            type: object
-      summary: Регистрация пользователя
       tags:
       - v2 / Пользователи
   /api/v2/user/avatar:

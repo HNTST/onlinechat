@@ -11,7 +11,6 @@ type UsersHTTPHandler struct {
 	usersService UsersService
 }
 type UsersService interface {
-	SaveUser(ctx context.Context, user domain.User) (domain.User, error)
 	GetUser(ctx context.Context, user_id *int) (domain.User, error)
 	GetUserID(ctx context.Context, username string) (int64, error)
 }
@@ -23,11 +22,6 @@ func NewUsersHTTPHandler(usersService UsersService) *UsersHTTPHandler {
 }
 func (h *UsersHTTPHandler) Routes() []core_http_server.Route {
 	return []core_http_server.Route{
-		{
-			Method:  http.MethodPost,
-			Path:    "/user",
-			Handler: h.SaveUser,
-		},
 		{
 			Method:  http.MethodGet,
 			Path:    "/user",

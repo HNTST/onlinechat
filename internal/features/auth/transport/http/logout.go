@@ -4,6 +4,14 @@ import (
 	"net/http"
 )
 
+// Logout clears session and cookie
+//
+//	@Summary		Выход из системы
+//	@Description	Завершение сессии, удаление session_token cookie
+//	@Tags			v2 / Аутентификация
+//	@Produce		json
+//	@Success		200		{object}	object{}
+//	@Router			/api/v2/auth/logout [post]
 func (h *AuthHTTPHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	log := getLogger(r.Context())
 

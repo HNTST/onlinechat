@@ -44,6 +44,11 @@ type mockUsersRepo struct {
 	mock.Mock
 }
 
+func (m *mockUsersRepo) SaveUser(ctx context.Context, user domain.User) (domain.User, error) {
+	args := m.Called(ctx, user)
+	return args.Get(0).(domain.User), args.Error(1)
+}
+
 func (m *mockUsersRepo) GetUser(ctx context.Context, userID int64) (domain.User, error) {
 	args := m.Called(ctx, userID)
 	return args.Get(0).(domain.User), args.Error(1)

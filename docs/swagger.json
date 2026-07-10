@@ -457,6 +457,106 @@
                 }
             }
         },
+        "/api/v2/auth/login": {
+            "post": {
+                "description": "Вход по username/password, устанавливает HttpOnly cookie session_token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2 / Аутентификация"
+                ],
+                "summary": "Аутентификация пользователя",
+                "parameters": [
+                    {
+                        "description": "Данные для входа",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth_transport_http.AuthRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.User"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/auth/logout": {
+            "post": {
+                "description": "Завершение сессии, удаление session_token cookie",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2 / Аутентификация"
+                ],
+                "summary": "Выход из системы",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/auth/register": {
+            "post": {
+                "description": "Создание новой учётной записи с авто-логином (устанавливается session_token)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2 / Аутентификация"
+                ],
+                "summary": "Регистрация пользователя",
+                "parameters": [
+                    {
+                        "description": "Данные для регистрации",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth_transport_http.RegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/domain.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v2/chat": {
             "post": {
                 "description": "Создание нового чата с двумя участниками",
@@ -1027,44 +1127,6 @@
                         }
                     }
                 }
-            },
-            "post": {
-                "description": "Создание новой учётной записи пользователя",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "v2 / Пользователи"
-                ],
-                "summary": "Регистрация пользователя",
-                "parameters": [
-                    {
-                        "description": "Данные для регистрации",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/users_transport_http.SaveUserRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/users_transport_http.SaveUserResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                }
             }
         },
         "/api/v2/user/avatar": {
@@ -1214,6 +1276,35 @@
         }
     },
     "definitions": {
+        "auth_transport_http.AuthRequest": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "auth_transport_http.RegisterRequest": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "minLength": 8
+                },
+                "username": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 3
+                }
+            }
+        },
         "chat_transport_http.AddUserToChatRequest": {
             "type": "object",
             "required": [
@@ -1495,41 +1586,6 @@
             }
         },
         "users_transport_http.GetUserResponse": {
-            "type": "object",
-            "properties": {
-                "avatar_id": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "reg": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "users_transport_http.SaveUserRequest": {
-            "type": "object",
-            "required": [
-                "username"
-            ],
-            "properties": {
-                "password": {
-                    "description": "Временно не обязательный",
-                    "type": "string",
-                    "minLength": 8
-                },
-                "username": {
-                    "type": "string",
-                    "maxLength": 100,
-                    "minLength": 3
-                }
-            }
-        },
-        "users_transport_http.SaveUserResponse": {
             "type": "object",
             "properties": {
                 "avatar_id": {

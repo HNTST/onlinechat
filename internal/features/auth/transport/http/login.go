@@ -6,6 +6,17 @@ import (
 	"time"
 )
 
+// Login authenticates user and sets session cookie
+//
+//	@Summary		Аутентификация пользователя
+//	@Description	Вход по username/password, устанавливает HttpOnly cookie session_token
+//	@Tags			v2 / Аутентификация
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		AuthRequest	true	"Данные для входа"
+//	@Success		200		{object}	domain.User
+//	@Failure		401		{object}	object{}
+//	@Router			/api/v2/auth/login [post]
 func (h *AuthHTTPHandler) Login(w http.ResponseWriter, r *http.Request) {
 	log := getLogger(r.Context())
 
