@@ -15,455 +15,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/chat": {
-            "post": {
-                "description": "Создание нового чата с двумя участниками",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "v1 / Чаты"
-                ],
-                "summary": "Создание чата",
-                "parameters": [
-                    {
-                        "description": "Данные чата",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "author": {
-                                    "type": "integer",
-                                    "format": "int64"
-                                },
-                                "chat_name": {
-                                    "type": "string"
-                                },
-                                "target_user": {
-                                    "type": "integer",
-                                    "format": "int64"
-                                }
-                            }
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "chat_id": {
-                                    "type": "integer",
-                                    "format": "int64"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/chats": {
-            "get": {
-                "description": "Получение всех чатов, в которых состоит пользователь",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "v1 / Чаты"
-                ],
-                "summary": "Чаты пользователя",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID пользователя",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/domain.Chat"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/chats/add_user": {
-            "post": {
-                "description": "Добавление пользователя в существующий чат по ID чата",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "v1 / Чаты"
-                ],
-                "summary": "Добавление пользователя в чат",
-                "parameters": [
-                    {
-                        "description": "Данные для добавления",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "chat_id": {
-                                    "type": "integer",
-                                    "format": "int64"
-                                },
-                                "target_user_id": {
-                                    "type": "integer",
-                                    "format": "int64"
-                                }
-                            }
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/chats/members": {
-            "get": {
-                "description": "Получение ID всех участников чата",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "v1 / Чаты"
-                ],
-                "summary": "Участники чата",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID чата",
-                        "name": "chat_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "members": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "integer",
-                                        "format": "int64"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/messages": {
-            "get": {
-                "description": "Получение всех сообщений в чате",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "v1 / Чаты"
-                ],
-                "summary": "Сообщения чата",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID чата",
-                        "name": "chat_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/domain.Messages"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/user": {
-            "get": {
-                "description": "Получение данных пользователя по его ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "v1 / Пользователи"
-                ],
-                "summary": "Получение пользователя",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID пользователя",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/domain.User"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Создание новой учётной записи пользователя",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "v1 / Пользователи"
-                ],
-                "summary": "Регистрация пользователя",
-                "parameters": [
-                    {
-                        "description": "Данные для регистрации",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "password": {
-                                    "type": "string"
-                                },
-                                "username": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "user_id": {
-                                    "type": "integer",
-                                    "format": "int64"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/user/avatar": {
-            "post": {
-                "description": "Загрузка файла аватара пользователя в MinIO и сохранение метаданных",
-                "consumes": [
-                    "multipart/form-data"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "v1 / Файлы"
-                ],
-                "summary": "Загрузка аватара",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID пользователя",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "file",
-                        "description": "Файл изображения аватара",
-                        "name": "new_user_avatar",
-                        "in": "formData",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "file_id": {
-                                    "type": "integer",
-                                    "format": "int64"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/user_id": {
-            "get": {
-                "description": "Получение ID пользователя по его имени",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "v1 / Пользователи"
-                ],
-                "summary": "Получение ID пользователя",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Имя пользователя",
-                        "name": "username",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "user_id": {
-                                    "type": "integer",
-                                    "format": "int64"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/ws": {
-            "get": {
-                "description": "Обновление HTTP до WebSocket для обмена сообщениями в реальном времени",
-                "tags": [
-                    "v1 / WebSocket"
-                ],
-                "summary": "WebSocket-соединение",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID пользователя",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "101": {
-                        "description": "Switching Protocols",
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                }
-            }
-        },
         "/api/v2/chat": {
             "post": {
                 "description": "Создание нового чата с двумя участниками",
@@ -493,6 +44,50 @@ const docTemplate = `{
                         "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/chat_transport_http.SaveChatResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/chat/{chat_id}": {
+            "delete": {
+                "description": "Удаление группового чата. Только для групповых чатов (is_group=true).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2 / Чаты"
+                ],
+                "summary": "Удаление группового чата",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "ID чата",
+                        "name": "chat_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "ID пользователя",
+                        "name": "user_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object"
                         }
                     },
                     "400": {
@@ -541,6 +136,62 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/chat_transport_http.AddUserToChatResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/chat/{chat_id}/name": {
+            "put": {
+                "description": "Изменение названия группового чата. Только для групповых чатов (is_group=true).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2 / Чаты"
+                ],
+                "summary": "Переименование группового чата",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "ID чата",
+                        "name": "chat_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "ID пользователя",
+                        "name": "user_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "Новое название",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/chat_transport_http.RenameChatRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object"
                         }
                     },
                     "400": {
@@ -1092,32 +743,6 @@ const docTemplate = `{
                     }
                 }
             }
-        },
-        "/api/v2/ws": {
-            "get": {
-                "description": "Обновление HTTP до WebSocket для обмена сообщениями в реальном времени (v2)",
-                "tags": [
-                    "v2 / WebSocket"
-                ],
-                "summary": "WebSocket-соединение",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID пользователя",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "101": {
-                        "description": "Switching Protocols",
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                }
-            }
         }
     },
     "definitions": {
@@ -1269,6 +894,17 @@ const docTemplate = `{
                 }
             }
         },
+        "chat_transport_http.RenameChatRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "chat_transport_http.SaveChatRequest": {
             "type": "object",
             "required": [
@@ -1282,6 +918,9 @@ const docTemplate = `{
                 },
                 "chat_name": {
                     "type": "string"
+                },
+                "is_group": {
+                    "type": "boolean"
                 },
                 "target_user": {
                     "type": "integer"
@@ -1308,63 +947,6 @@ const docTemplate = `{
                 },
                 "sender_id": {
                     "type": "integer"
-                }
-            }
-        },
-        "domain.Chat": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "domain.Messages": {
-            "type": "object",
-            "properties": {
-                "chat_id": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "is_deleted": {
-                    "type": "boolean"
-                },
-                "is_edited": {
-                    "type": "boolean"
-                },
-                "is_read": {
-                    "type": "boolean"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "sender_id": {
-                    "type": "integer"
-                },
-                "sent_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "domain.User": {
-            "type": "object",
-            "properties": {
-                "avatar_id": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "reg": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
                 }
             }
         },
@@ -1414,7 +996,8 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string",
-                    "maxLength": 100
+                    "maxLength": 100,
+                    "minLength": 3
                 }
             }
         },
