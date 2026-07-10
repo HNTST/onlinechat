@@ -109,12 +109,20 @@ func Cors() Middleware {
 				next.ServeHTTP(w, r)
 				return
 			}
-			w.Header().Set("Access-Control-Allow-Origin", "*")
+
+			// 1. Вместо "*" берем Origin из заголовков самого запроса
+			origin := r.Header.Get("Origin")
+			if origin != "" {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+			}
+
+			// 2. КРИТИЧЕСКИ ВАЖНО: разрешаем передачу кук/credentials
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
 
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie")
 
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
+			// Обработка preflight-запросов
 			if r.Method == "OPTIONS" {
 				w.WriteHeader(http.StatusOK)
 				return
