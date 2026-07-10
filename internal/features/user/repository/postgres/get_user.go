@@ -15,7 +15,7 @@ func (r *UserRepository) GetUser(ctx context.Context, user_id int64) (domain.Use
 	defer cancel()
 
 	query := `
-		select id, username, reg, avatar_id
+		select id, username, password, reg, avatar_id
 		from users
 		where id=$1
 	`
@@ -24,6 +24,7 @@ func (r *UserRepository) GetUser(ctx context.Context, user_id int64) (domain.Use
 	err := row.Scan(
 		&userModel.ID,
 		&userModel.Username,
+		&userModel.Password,
 		&userModel.Reg,
 		&userModel.AvatarID,
 	)
@@ -36,7 +37,7 @@ func (r *UserRepository) GetUser(ctx context.Context, user_id int64) (domain.Use
 	userDomain := domain.NewUserWithAvatar(
 		userModel.ID,
 		userModel.Username,
-		"-1",
+		userModel.Password,
 		userModel.Reg,
 		userModel.AvatarID,
 	)

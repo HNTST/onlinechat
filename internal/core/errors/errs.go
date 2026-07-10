@@ -15,4 +15,5 @@ var (
 
 	ErrChatNotExists    = errors.New("не существует")
 	ErrMessageNotFound  = errors.New("сообщение не найдено")
+	ErrUnauthorized     = errors.New("не авторизован")
 )

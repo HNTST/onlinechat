@@ -18,7 +18,7 @@ func NewUser(id int64, name, password string, reg time.Time) User {
 	return User{
 		Id:       id,
 		Name:     name,
-		Password: UninitializedPassword,
+		Password: password,
 		Reg:      reg,
 	}
 }
@@ -27,7 +27,7 @@ func NewUserWithAvatar(id int64, name, password string, reg time.Time, avatarID 
 	return User{
 		Id:       id,
 		Name:     name,
-		Password: UninitializedPassword,
+		Password: password,
 		Reg:      reg,
 		AvatarID: avatarID,
 	}

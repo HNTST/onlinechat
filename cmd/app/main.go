@@ -21,6 +21,9 @@ import (
 	files_postgres_repository "discord/internal/features/files/repository/postgres"
 	files_service "discord/internal/features/files/service"
 	files_transport_http "discord/internal/features/files/transport/http"
+	auth_postgres_repository "discord/internal/features/auth/repository/postgres"
+	auth_service "discord/internal/features/auth/service"
+	auth_transport_http "discord/internal/features/auth/transport/http"
 	users_postgres_repository "discord/internal/features/user/repository/postgres"
 	users_service "discord/internal/features/user/service"
 	users_transport_http "discord/internal/features/user/transport/http"
@@ -79,6 +82,12 @@ func main() {
 	usersTransport := users_transport_http.NewUsersHTTPHandler(usersService)
 	usersRoutes := usersTransport.Routes()
 
+	// --- V2 Auth module ---
+	authRepo := auth_postgres_repository.NewAuthRepository(pgPool)
+	authService := auth_service.NewAuthService(authRepo, usersRepo)
+	authTransport := auth_transport_http.NewAuthHTTPHandler(authService)
+	authRoutes := authTransport.Routes()
+
 	// --- V2 Chat module ---
 	chatRepo := chats_postgres_repository.NewChatRepository(pgPool)
 	chatService := chat_service.NewChatService(chatRepo)
@@ -107,6 +116,7 @@ func main() {
 		core_http_middleware.Logger(logger),
 		core_http_middleware.Panic(),
 		core_http_middleware.Trace(),
+		core_http_middleware.Auth(authService.ValidateSession),
 	)
 
 	// тоже для старых обработчиков
@@ -118,6 +128,7 @@ func main() {
 	apiVersionRouter2.RegisterRoutes(usersRoutes...)
 	apiVersionRouter2.RegisterRoutes(chatRoutes...)
 	apiVersionRouter2.RegisterRoutes(fileRoutes...)
+	apiVersionRouter2.RegisterRoutes(authRoutes...)
 	apiVersionRouter2.RegisterRoutes(
 		core_http_server.NewRoute(http.MethodGet, "/ws", chatWSHandler.HandleConnections),
 	)
