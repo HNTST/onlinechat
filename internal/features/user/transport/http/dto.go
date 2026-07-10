@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+type GetUserResponse UserDTOResponse
+
 type UserDTOResponse struct {
 	Id       int64     `json:"id"`
 	Name     string    `json:"username"`

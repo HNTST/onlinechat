@@ -35,7 +35,16 @@ func (m *mockUsersService) GetUserID(ctx context.Context, username string) (int6
 	return args.Get(0).(int64), args.Error(1)
 }
 
-func setupUserServer(t *testing.T, svc *mockUsersService) *httptest.Server {
+func withUser(userID int64) core_http_middleware.Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := context.WithValue(r.Context(), core_http_middleware.UserIDKey, userID)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+func setupUserServer(t *testing.T, svc *mockUsersService, userID ...int64) *httptest.Server {
 	t.Helper()
 	logger := core_logger.NewLogger()
 	handler := users_transport_http.NewUsersHTTPHandler(svc)
@@ -45,17 +54,21 @@ func setupUserServer(t *testing.T, svc *mockUsersService) *httptest.Server {
 	mux := http.NewServeMux()
 	mux.Handle("/api/v2/", http.StripPrefix("/api/v2", apiRouter))
 
-	wrapped := core_http_middleware.ChainMiddleware(
-		mux,
+	mws := []core_http_middleware.Middleware{
 		core_http_middleware.Logger(logger),
 		core_http_middleware.Panic(),
-	)
+	}
+	if len(userID) > 0 {
+		mws = append([]core_http_middleware.Middleware{withUser(userID[0])}, mws...)
+	}
+
+	wrapped := core_http_middleware.ChainMiddleware(mux, mws...)
 	return httptest.NewServer(wrapped)
 }
 
-func TestUserTransport_GetUser_Success(t *testing.T) {
+func TestUserTransport_Profile_Success(t *testing.T) {
 	mockSvc := new(mockUsersService)
-	srv := setupUserServer(t, mockSvc)
+	srv := setupUserServer(t, mockSvc, 1)
 	defer srv.Close()
 
 	avatarID := int64(42)
@@ -71,7 +84,7 @@ func TestUserTransport_GetUser_Success(t *testing.T) {
 		return p != nil && *p == 1
 	})).Return(expectedUser, nil)
 
-	resp, err := http.Get(srv.URL + "/api/v2/user?user_id=1")
+	resp, err := http.Get(srv.URL + "/api/v2/user/profile")
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
@@ -89,7 +102,56 @@ func TestUserTransport_GetUser_Success(t *testing.T) {
 	mockSvc.AssertExpectations(t)
 }
 
-func TestUserTransport_GetUser_NotFound(t *testing.T) {
+func TestUserTransport_Profile_Unauthorized(t *testing.T) {
+	mockSvc := new(mockUsersService)
+	srv := setupUserServer(t, mockSvc)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/v2/user/profile")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+	mockSvc.AssertNotCalled(t, "GetUser")
+}
+
+func TestUserTransport_GetUsers_Success(t *testing.T) {
+	mockSvc := new(mockUsersService)
+	srv := setupUserServer(t, mockSvc) // GetUsers doesn't use session
+	defer srv.Close()
+
+	avatarID := int64(7)
+	expectedUser := domain.User{
+		Id:       42,
+		Name:     "charlie",
+		Password: "-1",
+		Reg:      time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+		AvatarID: &avatarID,
+	}
+
+	mockSvc.On("GetUser", mock.Anything, mock.MatchedBy(func(p *int) bool {
+		return p != nil && *p == 42
+	})).Return(expectedUser, nil)
+
+	resp, err := http.Get(srv.URL + "/api/v2/users?id=42")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var result map[string]any
+	require.NoError(t, json.Unmarshal(body, &result))
+
+	require.Equal(t, float64(42), result["id"])
+	require.Equal(t, "charlie", result["username"])
+	require.Equal(t, float64(7), result["avatar_id"])
+	mockSvc.AssertExpectations(t)
+}
+
+func TestUserTransport_GetUsers_NotFound(t *testing.T) {
 	mockSvc := new(mockUsersService)
 	srv := setupUserServer(t, mockSvc)
 	defer srv.Close()
@@ -98,7 +160,7 @@ func TestUserTransport_GetUser_NotFound(t *testing.T) {
 		return p != nil && *p == 999
 	})).Return(domain.User{}, fmt.Errorf("user not found: %w", core_errors.ErrUserNotFound))
 
-	resp, err := http.Get(srv.URL + "/api/v2/user?user_id=999")
+	resp, err := http.Get(srv.URL + "/api/v2/users?id=999")
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
@@ -113,9 +175,22 @@ func TestUserTransport_GetUser_NotFound(t *testing.T) {
 	mockSvc.AssertExpectations(t)
 }
 
-func TestUserTransport_GetUser_ErrorMasking(t *testing.T) {
+func TestUserTransport_GetUsers_MissingID(t *testing.T) {
 	mockSvc := new(mockUsersService)
 	srv := setupUserServer(t, mockSvc)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/v2/users")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	mockSvc.AssertNotCalled(t, "GetUser")
+}
+
+func TestUserTransport_GetUser_ErrorMasking(t *testing.T) {
+	mockSvc := new(mockUsersService)
+	srv := setupUserServer(t, mockSvc, 1)
 	defer srv.Close()
 
 	rawError := errors.New("connection refused — db unavailable")
@@ -123,7 +198,7 @@ func TestUserTransport_GetUser_ErrorMasking(t *testing.T) {
 		return p != nil && *p == 1
 	})).Return(domain.User{}, rawError)
 
-	resp, err := http.Get(srv.URL + "/api/v2/user?user_id=1")
+	resp, err := http.Get(srv.URL + "/api/v2/user/profile")
 	require.NoError(t, err)
 	defer resp.Body.Close()
 

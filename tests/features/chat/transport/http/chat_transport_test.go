@@ -19,6 +19,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func withUser(userID int64) core_http_middleware.Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := context.WithValue(r.Context(), core_http_middleware.UserIDKey, userID)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
 type mockChatService struct {
 	mock.Mock
 }
@@ -88,7 +97,7 @@ func (m *mockChatService) DeleteChat(ctx context.Context, chatID int64, userID i
 	return args.Error(0)
 }
 
-func setupChatServer(t *testing.T, svc *mockChatService) *httptest.Server {
+func setupChatServer(t *testing.T, svc *mockChatService, userID ...int64) *httptest.Server {
 	t.Helper()
 	logger := core_logger.NewLogger()
 	handler := chat_transport_http.NewChatHttpHandler(svc)
@@ -98,11 +107,15 @@ func setupChatServer(t *testing.T, svc *mockChatService) *httptest.Server {
 	mux := http.NewServeMux()
 	mux.Handle("/api/v2/", http.StripPrefix("/api/v2", apiRouter))
 
-	wrapped := core_http_middleware.ChainMiddleware(
-		mux,
+	mws := []core_http_middleware.Middleware{
 		core_http_middleware.Logger(logger),
 		core_http_middleware.Panic(),
-	)
+	}
+	if len(userID) > 0 {
+		mws = append([]core_http_middleware.Middleware{withUser(userID[0])}, mws...)
+	}
+
+	wrapped := core_http_middleware.ChainMiddleware(mux, mws...)
 	return httptest.NewServer(wrapped)
 }
 
@@ -224,13 +237,13 @@ func TestChatTransport_DeleteMessage_InvalidID(t *testing.T) {
 
 func TestChatTransport_MarkMessagesAsRead_Success(t *testing.T) {
 	mockSvc := new(mockChatService)
-	srv := setupChatServer(t, mockSvc)
+	srv := setupChatServer(t, mockSvc, 1)
 	defer srv.Close()
 
-	mockSvc.On("MarkMessagesAsRead", mock.Anything, int64(10), int64(42), int64(100)).Return(nil)
+	mockSvc.On("MarkMessagesAsRead", mock.Anything, int64(10), int64(1), int64(100)).Return(nil)
 
 	bodyReader := strings.NewReader(`{"last_read_message_id": 100}`)
-	req, err := http.NewRequest(http.MethodPatch, srv.URL+"/api/v2/chats/10/messages/read-status?user_id=42", bodyReader)
+	req, err := http.NewRequest(http.MethodPatch, srv.URL+"/api/v2/chats/10/messages/read-status", bodyReader)
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -242,7 +255,7 @@ func TestChatTransport_MarkMessagesAsRead_Success(t *testing.T) {
 	mockSvc.AssertExpectations(t)
 }
 
-func TestChatTransport_MarkMessagesAsRead_MissingUserID(t *testing.T) {
+func TestChatTransport_MarkMessagesAsRead_Unauthorized(t *testing.T) {
 	mockSvc := new(mockChatService)
 	srv := setupChatServer(t, mockSvc)
 	defer srv.Close()
@@ -256,7 +269,7 @@ func TestChatTransport_MarkMessagesAsRead_MissingUserID(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	mockSvc.AssertNotCalled(t, "MarkMessagesAsRead")
 }
 
@@ -286,7 +299,7 @@ func TestChatTransport_Pagination_InvalidLastMessageID(t *testing.T) {
 
 func TestChatTransport_GetUserChatsExtended_Success(t *testing.T) {
 	mockSvc := new(mockChatService)
-	srv := setupChatServer(t, mockSvc)
+	srv := setupChatServer(t, mockSvc, 1)
 	defer srv.Close()
 
 	now := time.Now()
@@ -300,9 +313,9 @@ func TestChatTransport_GetUserChatsExtended_Success(t *testing.T) {
 			UnreadCount: 3,
 		},
 	}
-	mockSvc.On("GetUserChatsExtended", mock.Anything, int64(42)).Return(chats, nil)
+	mockSvc.On("GetUserChatsExtended", mock.Anything, int64(1)).Return(chats, nil)
 
-	resp, err := http.Get(srv.URL + "/api/v2/chats?user_id=42")
+	resp, err := http.Get(srv.URL + "/api/v2/chats")
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
@@ -328,13 +341,13 @@ func TestChatTransport_GetUserChatsExtended_Success(t *testing.T) {
 
 func TestChatTransport_RenameChat_Success(t *testing.T) {
 	mockSvc := new(mockChatService)
-	srv := setupChatServer(t, mockSvc)
+	srv := setupChatServer(t, mockSvc, 1)
 	defer srv.Close()
 
 	mockSvc.On("RenameChat", mock.Anything, int64(42), int64(1), "new-name").Return(nil)
 
 	bodyReader := strings.NewReader(`{"name": "new-name"}`)
-	req, err := http.NewRequest(http.MethodPut, srv.URL+"/api/v2/chat/42/name?user_id=1", bodyReader)
+	req, err := http.NewRequest(http.MethodPut, srv.URL+"/api/v2/chat/42/name", bodyReader)
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -346,7 +359,7 @@ func TestChatTransport_RenameChat_Success(t *testing.T) {
 	mockSvc.AssertExpectations(t)
 }
 
-func TestChatTransport_RenameChat_MissingUserID(t *testing.T) {
+func TestChatTransport_RenameChat_Unauthorized(t *testing.T) {
 	mockSvc := new(mockChatService)
 	srv := setupChatServer(t, mockSvc)
 	defer srv.Close()
@@ -360,17 +373,17 @@ func TestChatTransport_RenameChat_MissingUserID(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	mockSvc.AssertNotCalled(t, "RenameChat")
 }
 
 func TestChatTransport_RenameChat_EmptyName(t *testing.T) {
 	mockSvc := new(mockChatService)
-	srv := setupChatServer(t, mockSvc)
+	srv := setupChatServer(t, mockSvc, 1)
 	defer srv.Close()
 
 	bodyReader := strings.NewReader(`{"name": ""}`)
-	req, err := http.NewRequest(http.MethodPut, srv.URL+"/api/v2/chat/42/name?user_id=1", bodyReader)
+	req, err := http.NewRequest(http.MethodPut, srv.URL+"/api/v2/chat/42/name", bodyReader)
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -384,12 +397,12 @@ func TestChatTransport_RenameChat_EmptyName(t *testing.T) {
 
 func TestChatTransport_DeleteChat_Success(t *testing.T) {
 	mockSvc := new(mockChatService)
-	srv := setupChatServer(t, mockSvc)
+	srv := setupChatServer(t, mockSvc, 1)
 	defer srv.Close()
 
 	mockSvc.On("DeleteChat", mock.Anything, int64(42), int64(1)).Return(nil)
 
-	req, err := http.NewRequest(http.MethodDelete, srv.URL+"/api/v2/chat/42?user_id=1", nil)
+	req, err := http.NewRequest(http.MethodDelete, srv.URL+"/api/v2/chat/42", nil)
 	require.NoError(t, err)
 
 	resp, err := http.DefaultClient.Do(req)
@@ -400,7 +413,7 @@ func TestChatTransport_DeleteChat_Success(t *testing.T) {
 	mockSvc.AssertExpectations(t)
 }
 
-func TestChatTransport_DeleteChat_MissingUserID(t *testing.T) {
+func TestChatTransport_DeleteChat_Unauthorized(t *testing.T) {
 	mockSvc := new(mockChatService)
 	srv := setupChatServer(t, mockSvc)
 	defer srv.Close()
@@ -412,6 +425,6 @@ func TestChatTransport_DeleteChat_MissingUserID(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	mockSvc.AssertNotCalled(t, "DeleteChat")
 }

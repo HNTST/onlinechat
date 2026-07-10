@@ -24,8 +24,13 @@ func (h *UsersHTTPHandler) Routes() []core_http_server.Route {
 	return []core_http_server.Route{
 		{
 			Method:  http.MethodGet,
-			Path:    "/user",
-			Handler: h.GetUser,
+			Path:    "/user/profile",
+			Handler: h.GetProfile,
+		},
+		{
+			Method:  http.MethodGet,
+			Path:    "/users",
+			Handler: h.GetUsers,
 		},
 		{
 			Method:  http.MethodGet,

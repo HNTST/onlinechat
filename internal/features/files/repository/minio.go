@@ -18,7 +18,7 @@ type MinioStorage struct {
 func NewMinioStorage(cfg config.Config_Minio) (*MinioStorage, error) {
 	client, err := minio.New(cfg.Host, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.RootUser, cfg.RootPassword, ""),
-		Secure: false,
+		Secure: cfg.UseSSL,
 	})
 	if err != nil {
 		return nil, err

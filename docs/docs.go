@@ -622,14 +622,6 @@ const docTemplate = `{
                         "name": "chat_id",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "format": "int64",
-                        "description": "ID пользователя",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
                     }
                 ],
                 "responses": {
@@ -719,14 +711,6 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "integer",
-                        "format": "int64",
-                        "description": "ID пользователя",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
                         "description": "Новое название",
                         "name": "request",
                         "in": "body",
@@ -765,16 +749,6 @@ const docTemplate = `{
                     "v2 / Чаты"
                 ],
                 "summary": "Чаты пользователя",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "format": "int64",
-                        "description": "ID пользователя",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -958,14 +932,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/chat_transport_http.MarkMessagesAsReadRequest"
                         }
-                    },
-                    {
-                        "type": "integer",
-                        "format": "int64",
-                        "description": "ID пользователя",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
                     }
                 ],
                 "responses": {
@@ -1097,45 +1063,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v2/user": {
-            "get": {
-                "description": "Получение данных пользователя по его ID, включая avatar_id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "v2 / Пользователи"
-                ],
-                "summary": "Получение пользователя",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "format": "int64",
-                        "description": "ID пользователя",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/users_transport_http.GetUserResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                }
-            }
-        },
         "/api/v2/user/avatar": {
             "get": {
                 "description": "Находит метаданные файла в таблице files по ID, запрашивает объект из MinIO и стримит бинарный поток изображения для тега \u003cimg /\u003e",
@@ -1217,6 +1144,32 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v2/user/profile": {
+            "get": {
+                "description": "Получение профиля текущего пользователя (user_id из сессии)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2 / Пользователи"
+                ],
+                "summary": "Мой профиль",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/users_transport_http.GetUserResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v2/user_id": {
             "get": {
                 "description": "Получение ID пользователя по его имени",
@@ -1244,6 +1197,42 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/users_transport_http.GetUserIDResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/users": {
+            "get": {
+                "description": "Получение публичных данных пользователя по его ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "v2 / Пользователи"
+                ],
+                "summary": "Просмотр профиля",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "format": "int64",
+                        "description": "ID пользователя",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/users_transport_http.GetUserResponse"
                         }
                     },
                     "400": {

@@ -3,6 +3,7 @@ package chat_transport_http
 import (
 	core_errors "discord/internal/core/errors"
 	core_logger "discord/internal/core/logger"
+	core_http_middleware "discord/internal/core/transport/middleware"
 	core_http_response "discord/internal/core/transport/response"
 	"net/http"
 	"time"
@@ -40,7 +41,6 @@ type ChatExtendedDTO struct {
 //	@Tags			v2 / Чаты
 //	@Accept			json
 //	@Produce		json
-//	@Param			user_id	query		int64	true	"ID пользователя"
 //	@Success		200		{object}	GetUserChatsExtendedResponse
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v2/chats [get]
@@ -49,14 +49,9 @@ func (h *ChatHttpHandler) GetUserChats(w http.ResponseWriter, r *http.Request) {
 	log := core_logger.FromContext(ctx)
 	responseHandler := core_http_response.NewHTTPResponseHandler(log, w)
 
-	userIDStr := r.URL.Query().Get("user_id")
-	if userIDStr == "" {
-		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "param is incorrect")
-		return
-	}
-	userID, err := parseInt64(userIDStr)
-	if err != nil {
-		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "param is incorrect")
+	userID, ok := ctx.Value(core_http_middleware.UserIDKey).(int64)
+	if !ok {
+		responseHandler.ErrorResponse(core_errors.ErrUnauthorized, "не авторизован")
 		return
 	}
 

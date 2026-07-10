@@ -29,7 +29,7 @@ type Config_Minio struct {
 	BucketName   string
 	RootUser     string
 	RootPassword string
-	Sslmode      string
+	UseSSL       bool
 }
 type Config_Logger struct {
 	LogLevel string
@@ -71,6 +71,7 @@ func Load() *Config {
 			BucketName:   getEnv("MINIO_BUCKET_NAME", "discord-avatars"),
 			RootUser:     getEnv("MINIO_ROOT_USER", "minioadmin"),
 			RootPassword: requireEnv("MINIO_ROOT_PASSWORD"),
+			UseSSL:       getEnv("MINIO_USE_SSL", "false") == "true",
 		},
 		Config_Logger{
 			LogLevel: getEnv("LOGGER_LEVEL", "INFO"),

@@ -3,9 +3,9 @@ package chat_transport_http
 import (
 	core_errors "discord/internal/core/errors"
 	core_logger "discord/internal/core/logger"
+	core_http_middleware "discord/internal/core/transport/middleware"
 	core_http_request "discord/internal/core/transport/request"
 	core_http_response "discord/internal/core/transport/response"
-	core_http_utils "discord/internal/core/transport/utils"
 	"net/http"
 )
 
@@ -21,7 +21,6 @@ type RenameChatRequest struct {
 //	@Accept			json
 //	@Produce		json
 //	@Param			chat_id	path		int64				true	"ID чата"
-//	@Param			user_id	query		int64				true	"ID пользователя"
 //	@Param			request	body		RenameChatRequest	true	"Новое название"
 //	@Success		200		{object}	object{}
 //	@Failure		400		{object}	object{}
@@ -45,16 +44,11 @@ func (h *ChatHttpHandler) RenameChat(
 		return
 	}
 
-	userIDParam, err := core_http_utils.GetIntQueryParam(r, "user_id")
-	if err != nil {
-		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "invalid user_id")
+	userID, ok := ctx.Value(core_http_middleware.UserIDKey).(int64)
+	if !ok {
+		responseHandler.ErrorResponse(core_errors.ErrUnauthorized, "не авторизован")
 		return
 	}
-	if userIDParam == nil {
-		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "missing user_id")
-		return
-	}
-	userID := int64(*userIDParam)
 
 	var request RenameChatRequest
 	if err := core_http_request.DecodeAndValidateRequest(r, &request); err != nil {

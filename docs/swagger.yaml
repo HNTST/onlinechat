@@ -617,12 +617,6 @@ paths:
         name: chat_id
         required: true
         type: integer
-      - description: ID пользователя
-        format: int64
-        in: query
-        name: user_id
-        required: true
-        type: integer
       produces:
       - application/json
       responses:
@@ -682,12 +676,6 @@ paths:
         name: chat_id
         required: true
         type: integer
-      - description: ID пользователя
-        format: int64
-        in: query
-        name: user_id
-        required: true
-        type: integer
       - description: Новое название
         in: body
         name: request
@@ -714,13 +702,6 @@ paths:
       - application/json
       description: Получение всех чатов пользователя с последним сообщением и счётчиком
         непрочитанных
-      parameters:
-      - description: ID пользователя
-        format: int64
-        in: query
-        name: user_id
-        required: true
-        type: integer
       produces:
       - application/json
       responses:
@@ -922,12 +903,6 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/chat_transport_http.MarkMessagesAsReadRequest'
-      - description: ID пользователя
-        format: int64
-        in: query
-        name: user_id
-        required: true
-        type: integer
       produces:
       - application/json
       responses:
@@ -942,32 +917,6 @@ paths:
       summary: Отметка о прочтении
       tags:
       - v2 / Чаты
-  /api/v2/user:
-    get:
-      consumes:
-      - application/json
-      description: Получение данных пользователя по его ID, включая avatar_id
-      parameters:
-      - description: ID пользователя
-        format: int64
-        in: query
-        name: user_id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/users_transport_http.GetUserResponse'
-        "400":
-          description: Bad Request
-          schema:
-            type: object
-      summary: Получение пользователя
-      tags:
-      - v2 / Пользователи
   /api/v2/user/avatar:
     get:
       description: Находит метаданные файла в таблице files по ID, запрашивает объект
@@ -1024,6 +973,23 @@ paths:
       summary: Загрузка аватара
       tags:
       - v2 / Файлы
+  /api/v2/user/profile:
+    get:
+      description: Получение профиля текущего пользователя (user_id из сессии)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users_transport_http.GetUserResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            type: object
+      summary: Мой профиль
+      tags:
+      - v2 / Пользователи
   /api/v2/user_id:
     get:
       consumes:
@@ -1047,6 +1013,30 @@ paths:
           schema:
             type: object
       summary: Получение ID пользователя
+      tags:
+      - v2 / Пользователи
+  /api/v2/users:
+    get:
+      description: Получение публичных данных пользователя по его ID
+      parameters:
+      - description: ID пользователя
+        format: int64
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users_transport_http.GetUserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            type: object
+      summary: Просмотр профиля
       tags:
       - v2 / Пользователи
   /api/v2/ws:

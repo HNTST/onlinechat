@@ -3,8 +3,8 @@ package chat_transport_http
 import (
 	core_errors "discord/internal/core/errors"
 	core_logger "discord/internal/core/logger"
+	core_http_middleware "discord/internal/core/transport/middleware"
 	core_http_response "discord/internal/core/transport/response"
-	core_http_utils "discord/internal/core/transport/utils"
 	"net/http"
 )
 
@@ -15,7 +15,6 @@ import (
 //	@Tags			v2 / Чаты
 //	@Produce		json
 //	@Param			chat_id	path		int64	true	"ID чата"
-//	@Param			user_id	query		int64	true	"ID пользователя"
 //	@Success		200		{object}	object{}
 //	@Failure		400		{object}	object{}
 //	@Router			/api/v2/chat/{chat_id} [delete]
@@ -38,16 +37,11 @@ func (h *ChatHttpHandler) DeleteChat(
 		return
 	}
 
-	userIDParam, err := core_http_utils.GetIntQueryParam(r, "user_id")
-	if err != nil {
-		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "invalid user_id")
+	userID, ok := ctx.Value(core_http_middleware.UserIDKey).(int64)
+	if !ok {
+		responseHandler.ErrorResponse(core_errors.ErrUnauthorized, "не авторизован")
 		return
 	}
-	if userIDParam == nil {
-		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "missing user_id")
-		return
-	}
-	userID := int64(*userIDParam)
 
 	err = h.chatService.DeleteChat(ctx, chatID, userID)
 	if err != nil {
