@@ -37,7 +37,7 @@ func (s *ChatService) SaveChat(
 				}
 			}
 
-			if chat_id == 0 {
+			if chat_id <= 0 {
 				chat_id, err = s.chatRepository.CreateNewChat(
 					txCtx,
 					name,
