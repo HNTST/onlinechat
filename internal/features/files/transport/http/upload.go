@@ -3,11 +3,11 @@ package files_transport_http
 import (
 	core_errors "discord/internal/core/errors"
 	core_logger "discord/internal/core/logger"
+	core_http_middleware "discord/internal/core/transport/middleware"
 	core_http_response "discord/internal/core/transport/response"
 	"io"
 	"log/slog"
 	"net/http"
-	"strconv"
 )
 
 const maxAvatarSize = 5 * 1024 * 1024
@@ -29,10 +29,10 @@ type UploadAvatarResponse struct {
 //	@Tags			v2 / Файлы
 //	@Accept			mpfd
 //	@Produce		json
-//	@Param			user_id			query		int64	true	"ID пользователя"
 //	@Param			new_user_avatar	formData	file	true	"Файл изображения аватара"
 //	@Success		201				{object}	UploadAvatarResponse
 //	@Failure		400				{object}	object{}
+//	@Failure		401				{object}	object{}
 //	@Router			/api/v2/user/avatar [post]
 func (h *FileHTTPHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -41,14 +41,9 @@ func (h *FileHTTPHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 
 	r.Body = http.MaxBytesReader(w, r.Body, maxAvatarSize)
 
-	userIDStr := r.URL.Query().Get("user_id")
-	if userIDStr == "" {
-		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "param is incorrect")
-		return
-	}
-	userID, err := strconv.Atoi(userIDStr)
-	if err != nil {
-		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "param is incorrect")
+	userID, ok := ctx.Value(core_http_middleware.UserIDKey).(int64)
+	if !ok {
+		responseHandler.ErrorResponse(core_errors.ErrUnauthorized, "требуется авторизация")
 		return
 	}
 
@@ -89,7 +84,7 @@ func (h *FileHTTPHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fileID, err := h.fileService.UploadAvatar(ctx, int64(userID), file, header.Size, detectedMIME, ext)
+	fileID, err := h.fileService.UploadAvatar(ctx, userID, file, header.Size, detectedMIME, ext)
 	if err != nil {
 		log.Warn("ошибка сохранения аватарки", slog.String("error", err.Error()))
 		responseHandler.ErrorResponse(core_errors.ErrInvalidArgument, "не удалось сохранить аватарку")

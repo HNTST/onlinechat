@@ -4,9 +4,9 @@ import (
 	"context"
 	"discord/internal/core/domain"
 	core_logger "discord/internal/core/logger"
+	core_http_middleware "discord/internal/core/transport/middleware"
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
@@ -42,17 +42,15 @@ func NewChatWSHandler(chatService ChatService) *ChatWSHandler {
 //	@Summary		WebSocket-соединение
 //	@Description	Обновление HTTP до WebSocket для обмена сообщениями в реальном времени (v2)
 //	@Tags			v2 / WebSocket
-//	@Param			user_id	query	int	true	"ID пользователя"
 //	@Success		101		{object}	object{}
+//	@Failure		401		{object}	object{}
 //	@Router			/api/v2/ws [get]
 func (h *ChatWSHandler) HandleConnections(w http.ResponseWriter, r *http.Request) {
-	uidStr := r.URL.Query().Get("user_id")
-	userID, err := strconv.Atoi(uidStr)
-	if err != nil {
-		http.Error(w, "invalid user_id", http.StatusBadRequest)
+	user_id, ok := r.Context().Value(core_http_middleware.UserIDKey).(int64)
+	if !ok {
+		http.Error(w, "требуется авторизация", http.StatusUnauthorized)
 		return
 	}
-	user_id := int64(userID)
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return
@@ -72,7 +70,7 @@ func (h *ChatWSHandler) HandleConnections(w http.ResponseWriter, r *http.Request
 	}()
 
 	log := core_logger.FromContext(ctx)
-	log.Info("websocket", "user_id", userID, "msg", "user connected")
+	log.Info("websocket", "user_id", user_id, "msg", "user connected")
 
 	for {
 		_, msg, err := conn.ReadMessage()
