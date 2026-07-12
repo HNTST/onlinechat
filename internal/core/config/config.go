@@ -55,7 +55,12 @@ func requireEnv(key string) string {
 }
 
 func Load() *Config {
-	godotenv.Load("internal/core/config/.env")
+	appEnv := getEnv("APP_ENV", "prod")
+	envFile := "internal/core/config/.env"
+	if appEnv == "test" || appEnv == "local" {
+		envFile = "internal/core/config/.env.test"
+	}
+	_ = godotenv.Load(envFile)
 	return &Config{
 		Config_DB{
 			Host:     getEnv("DB_HOST", "localhost"),

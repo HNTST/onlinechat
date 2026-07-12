@@ -30,6 +30,7 @@ type LastMessageDTO struct {
 type ChatExtendedDTO struct {
 	Id          int64           `json:"id"`
 	Name        string          `json:"name"`
+	IsGroup     bool            `json:"is_group"`
 	LastMessage *LastMessageDTO `json:"last_message,omitempty"`
 	UnreadCount int             `json:"unread_count"`
 }
@@ -75,6 +76,7 @@ func (h *ChatHttpHandler) GetUserChats(w http.ResponseWriter, r *http.Request) {
 		dtos[i] = ChatExtendedDTO{
 			Id:          c.Id,
 			Name:        c.Name,
+			IsGroup:     c.IsGroup,
 			LastMessage: lm,
 			UnreadCount: c.UnreadCount,
 		}

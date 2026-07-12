@@ -46,6 +46,7 @@ func NewConnectionPool(ctx context.Context, cfg core_config.Config_DB) (*Connect
 		return nil, fmt.Errorf("parse pgx config: %w", err)
 	}
 
+	pgxconfig.MaxConns = 20
 	pool, err := pgxpool.NewWithConfig(ctx, pgxconfig)
 	if err != nil {
 		return nil, fmt.Errorf("create pgx pool: %w", err)
