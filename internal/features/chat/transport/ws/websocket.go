@@ -43,6 +43,34 @@ type wsStatus struct {
 	UserID int64  `json:"user_id"`
 }
 
+func (h *ChatWSHandler) notifyUserAboutOnlinePartners(ctx context.Context, userID int64) {
+	partnerIDs, err := h.chatService.GetChatPartnerIDs(ctx, userID)
+	if err != nil {
+		log := core_logger.FromContext(ctx)
+		log.Warn("failed to get chat partners for self status check", "user_id", userID, "error", err)
+		return
+	}
+
+	h.clientsMu.Lock()
+	defer h.clientsMu.Unlock()
+
+	selfConn, ok := h.clients[userID]
+	if !ok {
+		return
+	}
+
+	for _, id := range partnerIDs {
+		if _, online := h.clients[id]; online {
+			msg := wsStatus{Type: "online", UserID: id}
+			if err := selfConn.WriteJSON(msg); err != nil {
+				selfConn.Close()
+				delete(h.clients, userID)
+				return
+			}
+		}
+	}
+}
+
 func (h *ChatWSHandler) notifyPartners(ctx context.Context, userID int64, status string) {
 	partnerIDs, err := h.chatService.GetChatPartnerIDs(ctx, userID)
 	if err != nil {
@@ -71,7 +99,7 @@ func (h *ChatWSHandler) notifyPartners(ctx context.Context, userID int64, status
 //	@Summary		WebSocket-соединение (v2)
 //	@Description	Обновление HTTP до WebSocket для обмена сообщениями и отслеживания статуса онлайн/оффлайн в реальном времени.
 //	@Description	
-//	@Description	**Входящие сообщения (от клиента):**
+//	@Description	**Входящее сообщение (от клиента):**
 //	@Description	```json
 //	@Description	{ "message": "text", "chat_id": 1, "sender_id": 123 }
 //	@Description	```
@@ -83,15 +111,17 @@ func (h *ChatWSHandler) notifyPartners(ctx context.Context, userID int64, status
 //	@Description	{ "id": 456, "message": "text", "chat_id": 1, "sender_id": 123, "sent_at": "2025-01-01T00:00:00Z" }
 //	@Description	```
 //	@Description	
-//	@Description	2. Пользователь онлайн:
+//	@Description	2. Пользователь онлайн (приходит всем чат-партнёрам при подключении + новому пользователю о уже подключённых партнёрах):
 //	@Description	```json
 //	@Description	{ "type": "online", "user_id": 123 }
 //	@Description	```
 //	@Description	
-//	@Description	3. Пользователь оффлайн:
+//	@Description	3. Пользователь оффлайн (приходит всем чат-партнёрам при отключении):
 //	@Description	```json
 //	@Description	{ "type": "offline", "user_id": 123 }
 //	@Description	```
+//	@Description	
+//	@Description	**Поведение:** При подключении нового пользователя сервер (1) уведомляет всех его чат-партнёров, что он онлайн, и (2) отправляет ему список уже подключённых партнёров. Уведомления приходят только для пользователей, состоящих в одном чате.
 //	@Tags			v2 / WebSocket
 //	@Success		101		{object}	object{}
 //	@Failure		401		{object}	object{}
@@ -124,6 +154,7 @@ func (h *ChatWSHandler) HandleConnections(w http.ResponseWriter, r *http.Request
 	log.Info("websocket", "user_id", user_id, "msg", "user connected")
 
 	h.notifyPartners(ctx, user_id, "online")
+	h.notifyUserAboutOnlinePartners(ctx, user_id)
 
 	for {
 		_, msg, err := conn.ReadMessage()
