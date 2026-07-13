@@ -90,3 +90,8 @@ func (m *mockChatRepo) IsUserInChat(ctx context.Context, userID int64, chatID in
 	args := m.Called(ctx, userID, chatID)
 	return args.Bool(0), args.Error(1)
 }
+
+func (m *mockChatRepo) GetChatPartnerIDs(ctx context.Context, userID int64) ([]int64, error) {
+	args := m.Called(ctx, userID)
+	return args.Get(0).([]int64), args.Error(1)
+}

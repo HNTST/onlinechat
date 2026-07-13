@@ -86,6 +86,10 @@ type ChatRepository interface {
 		userID int64,
 		chatID int64,
 	) (bool, error)
+	GetChatPartnerIDs(
+		ctx context.Context,
+		userID int64,
+	) ([]int64, error)
 }
 
 func NewChatService(chatRepository ChatRepository) *ChatService {

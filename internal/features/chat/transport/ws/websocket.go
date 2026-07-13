@@ -22,6 +22,7 @@ var upgrader = websocket.Upgrader{
 type ChatService interface {
 	SaveMessage(ctx context.Context, message domain.Messages) error
 	GetChatMembers(ctx context.Context, chat_id int64) ([]int64, error)
+	GetChatPartnerIDs(ctx context.Context, userID int64) ([]int64, error)
 }
 
 type ChatWSHandler struct {
@@ -37,10 +38,60 @@ func NewChatWSHandler(chatService ChatService) *ChatWSHandler {
 	}
 }
 
+type wsStatus struct {
+	Type   string `json:"type"`
+	UserID int64  `json:"user_id"`
+}
+
+func (h *ChatWSHandler) notifyPartners(ctx context.Context, userID int64, status string) {
+	partnerIDs, err := h.chatService.GetChatPartnerIDs(ctx, userID)
+	if err != nil {
+		log := core_logger.FromContext(ctx)
+		log.Warn("failed to get chat partners for status notification", "user_id", userID, "error", err)
+		return
+	}
+
+	msg := wsStatus{Type: status, UserID: userID}
+
+	h.clientsMu.Lock()
+	defer h.clientsMu.Unlock()
+
+	for _, id := range partnerIDs {
+		if conn, ok := h.clients[id]; ok {
+			if err := conn.WriteJSON(msg); err != nil {
+				conn.Close()
+				delete(h.clients, id)
+			}
+		}
+	}
+}
+
 // HandleConnections upgrades to WebSocket
 //
-//	@Summary		WebSocket-соединение
-//	@Description	Обновление HTTP до WebSocket для обмена сообщениями в реальном времени (v2)
+//	@Summary		WebSocket-соединение (v2)
+//	@Description	Обновление HTTP до WebSocket для обмена сообщениями и отслеживания статуса онлайн/оффлайн в реальном времени.
+//	@Description	
+//	@Description	**Входящие сообщения (от клиента):**
+//	@Description	```json
+//	@Description	{ "message": "text", "chat_id": 1, "sender_id": 123 }
+//	@Description	```
+//	@Description	
+//	@Description	**Исходящие сообщения (от сервера):**
+//	@Description	
+//	@Description	1. Новое сообщение в чате:
+//	@Description	```json
+//	@Description	{ "id": 456, "message": "text", "chat_id": 1, "sender_id": 123, "sent_at": "2025-01-01T00:00:00Z" }
+//	@Description	```
+//	@Description	
+//	@Description	2. Пользователь онлайн:
+//	@Description	```json
+//	@Description	{ "type": "online", "user_id": 123 }
+//	@Description	```
+//	@Description	
+//	@Description	3. Пользователь оффлайн:
+//	@Description	```json
+//	@Description	{ "type": "offline", "user_id": 123 }
+//	@Description	```
 //	@Tags			v2 / WebSocket
 //	@Success		101		{object}	object{}
 //	@Failure		401		{object}	object{}
@@ -72,12 +123,15 @@ func (h *ChatWSHandler) HandleConnections(w http.ResponseWriter, r *http.Request
 	log := core_logger.FromContext(ctx)
 	log.Info("websocket", "user_id", user_id, "msg", "user connected")
 
+	h.notifyPartners(ctx, user_id, "online")
+
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
 			h.clientsMu.Lock()
 			delete(h.clients, user_id)
 			h.clientsMu.Unlock()
+			h.notifyPartners(ctx, user_id, "offline")
 			break
 		}
 		h.processMessage(ctx, msg, user_id)
