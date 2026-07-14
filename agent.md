@@ -265,7 +265,24 @@ CRUD чатов и сообщений. Личные и групповые чат
 | `make check` | go vet + модульные + HTTP-тесты |
 | `make test-integration` | Полный цикл: Docker up → тесты репозиториев → Docker down |
 | `make load-test SCRIPT=auth/login.js` | Запуск конкретного k6-теста |
-| `make load-test-<name>` | Ярлык для k6-теста (register, login, logout, smoke, ...) |
+| `make load-test VUS=50 DURATION=60s` | k6 с кастомными параметрами |
+| `make load-test-register` | k6: регистрация |
+| `make load-test-login` | k6: логин |
+| `make load-test-logout` | k6: логаут |
+| `make load-test-smoke` | k6: smoke |
+| `make load-test-profile` | k6: профиль |
+| `make load-test-get-user-id` | k6: поиск user_id |
+| `make load-test-upload-avatar` | k6: загрузка аватарки |
+| `make load-test-get-avatar` | k6: получение аватарки |
+| `make load-test-chats` | k6: чаты |
+| `make load-test-messages` | k6: сообщения |
+| `make load-test-add-member` | k6: добавление участника |
+| `make load-test-get-members` | k6: список участников |
+| `make load-test-edit-message` | k6: редактирование сообщения |
+| `make load-test-delete-message` | k6: удаление сообщения |
+| `make load-test-mark-read` | k6: отметка прочтения |
+| `make load-test-rename-chat` | k6: переименование чата |
+| `make load-test-delete-chat` | k6: удаление чата |
 | `make app-up` | Запуск приложения (продакшн) |
 
 ---
@@ -276,3 +293,20 @@ CRUD чатов и сообщений. Личные и групповые чат
 2. `.env.example` использует ключ `SSLMODE`, тогда как код ожидает `DB_SSLMODE`.
 3. `POST /api/v2/chats/{chat_id}/messages` возвращает 201 без body — message_id нужно получать через `GET messages`.
 4. Нет heartbeat/keepalive для WebSocket — обрыв соединения обнаруживается только при попытке отправки.
+
+---
+
+## Правила для ИИ-агента
+
+1. **Язык** — все ответы строго на русском языке.
+2. **Изоляция изменений** — работать только с тем, что указано в запросе. Не модифицировать смежные файлы без прямой необходимости.
+3. **Ядро (internal/core/) не трогать** — категорически запрещено изменять или удалять файлы в `internal/core/` без прямого указания. Можно только использовать.
+4. **V1 Legacy не трогать** — запрещено модифицировать код в `internal/delivery/`, `internal/repository/`, `internal/service/` без прямого указания.
+5. **Тестирование обязательно** — после каждого изменения кода необходимо:
+   - Запустить `go vet ./...`
+   - Запустить `make check` (модульные + HTTP-тесты)
+   - Если что-то не проходит — исправить и повторить цикл до зелёного состояния
+6. **Swagger** — если меняется API (новый эндпоинт, изменение ответа), обновлять swagger-комментарии в хендлере.
+7. **Маскировка ошибок** — все 500 ошибки маскируются для клиента. Сырые ошибки БД/MinIO never не отдаются наружу, только в лог.
+8. **Конфиденциальность** — запрещено логировать пароли и секретные ключи даже на уровне Debug.
+9. **Транзакции** — в сервисах v2 транзакции открываются через `repo.Transaction(ctx, func(txCtx) { ... })`. Запрещено вызывать Begin/Commit/Rollback напрямую.
