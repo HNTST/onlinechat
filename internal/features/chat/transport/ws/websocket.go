@@ -13,6 +13,11 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const (
+	pongWait   = 60 * time.Second
+	pingPeriod = 54 * time.Second
+)
+
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
@@ -29,6 +34,7 @@ type ChatWSHandler struct {
 	chatService ChatService
 	clients     map[int64]*websocket.Conn
 	clientsMu   sync.Mutex
+	writeMu     sync.Mutex
 }
 
 func NewChatWSHandler(chatService ChatService) *ChatWSHandler {
@@ -62,7 +68,10 @@ func (h *ChatWSHandler) notifyUserAboutOnlinePartners(ctx context.Context, userI
 	for _, id := range partnerIDs {
 		if _, online := h.clients[id]; online {
 			msg := wsStatus{Type: "online", UserID: id}
-			if err := selfConn.WriteJSON(msg); err != nil {
+			h.writeMu.Lock()
+			err := selfConn.WriteJSON(msg)
+			h.writeMu.Unlock()
+			if err != nil {
 				selfConn.Close()
 				delete(h.clients, userID)
 				return
@@ -86,12 +95,24 @@ func (h *ChatWSHandler) notifyPartners(ctx context.Context, userID int64, status
 
 	for _, id := range partnerIDs {
 		if conn, ok := h.clients[id]; ok {
-			if err := conn.WriteJSON(msg); err != nil {
+			h.writeMu.Lock()
+			err := conn.WriteJSON(msg)
+			h.writeMu.Unlock()
+			if err != nil {
 				conn.Close()
 				delete(h.clients, id)
 			}
 		}
 	}
+}
+
+func (h *ChatWSHandler) removeClient(userID int64) {
+	h.clientsMu.Lock()
+	if conn, ok := h.clients[userID]; ok {
+		conn.Close()
+		delete(h.clients, userID)
+	}
+	h.clientsMu.Unlock()
 }
 
 // HandleConnections upgrades to WebSocket
@@ -122,6 +143,8 @@ func (h *ChatWSHandler) notifyPartners(ctx context.Context, userID int64, status
 //	@Description	```
 //	@Description	
 //	@Description	**Поведение:** При подключении нового пользователя сервер (1) уведомляет всех его чат-партнёров, что он онлайн, и (2) отправляет ему список уже подключённых партнёров. Уведомления приходят только для пользователей, состоящих в одном чате.
+//	@Description	
+//	@Description	**Heartbeat:** Сервер отправляет Ping каждые 54с. Клиент должен отвечать Pong (встроено в большинство WS-библиотек). Если Pong не получен в течение 60с — соединение закрывается.
 //	@Tags			v2 / WebSocket
 //	@Success		101		{object}	object{}
 //	@Failure		401		{object}	object{}
@@ -145,12 +168,38 @@ func (h *ChatWSHandler) HandleConnections(w http.ResponseWriter, r *http.Request
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 
+	log := core_logger.FromContext(ctx)
+
+	conn.SetPongHandler(func(string) error {
+		conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
+	conn.SetReadDeadline(time.Now().Add(pongWait))
+
+	pingTicker := time.NewTicker(pingPeriod)
+	defer pingTicker.Stop()
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-pingTicker.C:
+				h.writeMu.Lock()
+				err := conn.WriteMessage(websocket.PingMessage, nil)
+				h.writeMu.Unlock()
+				if err != nil {
+					return
+				}
+			}
+		}
+	}()
+
 	go func() {
 		<-ctx.Done()
 		conn.Close()
 	}()
 
-	log := core_logger.FromContext(ctx)
 	log.Info("websocket", "user_id", user_id, "msg", "user connected")
 
 	h.notifyPartners(ctx, user_id, "online")
@@ -159,9 +208,7 @@ func (h *ChatWSHandler) HandleConnections(w http.ResponseWriter, r *http.Request
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
-			h.clientsMu.Lock()
-			delete(h.clients, user_id)
-			h.clientsMu.Unlock()
+			h.removeClient(user_id)
 			h.notifyPartners(ctx, user_id, "offline")
 			break
 		}
@@ -200,7 +247,9 @@ func (h *ChatWSHandler) processMessage(ctx context.Context, data []byte, actualS
 	h.clientsMu.Lock()
 	for _, id := range membersIDs {
 		if clientConn, ok := h.clients[id]; ok {
+			h.writeMu.Lock()
 			err := clientConn.WriteJSON(m)
+			h.writeMu.Unlock()
 			if err != nil {
 				clientConn.Close()
 				delete(h.clients, id)
