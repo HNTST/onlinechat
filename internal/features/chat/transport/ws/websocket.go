@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	pongWait   = 60 * time.Second
-	pingPeriod = 54 * time.Second
+	pongWait      = 60 * time.Second
+	pingPeriod    = 54 * time.Second
+	statusCleanup = 24 * time.Hour
 )
 
 var upgrader = websocket.Upgrader{
@@ -28,25 +29,99 @@ type ChatService interface {
 	SaveMessage(ctx context.Context, message domain.Messages) error
 	GetChatMembers(ctx context.Context, chat_id int64) ([]int64, error)
 	GetChatPartnerIDs(ctx context.Context, userID int64) ([]int64, error)
+	SaveLastSeen(ctx context.Context, userID int64, lastSeen time.Time) error
+	GetLastSeen(ctx context.Context, userID int64) (*time.Time, error)
+}
+
+type UserStatus struct {
+	Status   string
+	LastSeen time.Time
 }
 
 type ChatWSHandler struct {
-	chatService ChatService
-	clients     map[int64]*websocket.Conn
-	clientsMu   sync.Mutex
-	writeMu     sync.Mutex
+	chatService  ChatService
+	clients      map[int64]*websocket.Conn
+	clientsMu    sync.Mutex
+	writeMu      sync.Mutex
+	userStatuses map[int64]*UserStatus
+	statusMu     sync.RWMutex
 }
 
 func NewChatWSHandler(chatService ChatService) *ChatWSHandler {
-	return &ChatWSHandler{
-		chatService: chatService,
-		clients:     make(map[int64]*websocket.Conn),
+	h := &ChatWSHandler{
+		chatService:  chatService,
+		clients:      make(map[int64]*websocket.Conn),
+		userStatuses: make(map[int64]*UserStatus),
 	}
+	go h.cleanupStaleStatuses()
+	return h
 }
 
 type wsStatus struct {
-	Type   string `json:"type"`
-	UserID int64  `json:"user_id"`
+	Type     string `json:"type"`
+	UserID   int64  `json:"user_id"`
+	LastSeen string `json:"last_seen,omitempty"`
+}
+
+func (h *ChatWSHandler) setUserStatus(userID int64, status string) {
+	h.statusMu.Lock()
+	h.userStatuses[userID] = &UserStatus{
+		Status:   status,
+		LastSeen: time.Now(),
+	}
+	h.statusMu.Unlock()
+}
+
+func (h *ChatWSHandler) removeUserStatus(userID int64) {
+	h.statusMu.Lock()
+	if s, ok := h.userStatuses[userID]; ok {
+		s.Status = "offline"
+		s.LastSeen = time.Now()
+	}
+	h.statusMu.Unlock()
+}
+
+func (h *ChatWSHandler) getUserStatus(userID int64) (string, time.Time, bool) {
+	h.statusMu.RLock()
+	defer h.statusMu.RUnlock()
+	s, ok := h.userStatuses[userID]
+	if !ok {
+		return "", time.Time{}, false
+	}
+	return s.Status, s.LastSeen, true
+}
+
+func (h *ChatWSHandler) getStatusForPartners(userID int64) (string, time.Time) {
+	status, lastSeen, ok := h.getUserStatus(userID)
+	if ok {
+		return status, lastSeen
+	}
+
+	lastSeenDB, err := h.chatService.GetLastSeen(context.Background(), userID)
+	if err != nil || lastSeenDB == nil {
+		return "offline", time.Time{}
+	}
+	return "offline", *lastSeenDB
+}
+
+func (h *ChatWSHandler) cleanupStaleStatuses() {
+	ticker := time.NewTicker(time.Hour)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		h.statusMu.Lock()
+		now := time.Now()
+		for userID, s := range h.userStatuses {
+			if s.Status == "offline" && now.Sub(s.LastSeen) > statusCleanup {
+				if err := h.chatService.SaveLastSeen(context.Background(), userID, s.LastSeen); err != nil {
+					log := core_logger.NewLogger()
+					log.Warn("failed to save last seen on cleanup", "user_id", userID, "error", err)
+				}
+				delete(h.userStatuses, userID)
+			}
+		}
+		h.statusMu.Unlock()
+	}
 }
 
 func (h *ChatWSHandler) notifyUserAboutOnlinePartners(ctx context.Context, userID int64) {
@@ -67,7 +142,8 @@ func (h *ChatWSHandler) notifyUserAboutOnlinePartners(ctx context.Context, userI
 
 	for _, id := range partnerIDs {
 		if _, online := h.clients[id]; online {
-			msg := wsStatus{Type: "online", UserID: id}
+			status, lastSeen := h.getStatusForPartners(id)
+			msg := wsStatus{Type: status, UserID: id, LastSeen: lastSeen.Format(time.RFC3339)}
 			h.writeMu.Lock()
 			err := selfConn.WriteJSON(msg)
 			h.writeMu.Unlock()
@@ -88,7 +164,14 @@ func (h *ChatWSHandler) notifyPartners(ctx context.Context, userID int64, status
 		return
 	}
 
+	h.statusMu.RLock()
+	us := h.userStatuses[userID]
+	h.statusMu.RUnlock()
+
 	msg := wsStatus{Type: status, UserID: userID}
+	if us != nil {
+		msg.LastSeen = us.LastSeen.Format(time.RFC3339)
+	}
 
 	h.clientsMu.Lock()
 	defer h.clientsMu.Unlock()
@@ -118,7 +201,7 @@ func (h *ChatWSHandler) removeClient(userID int64) {
 // HandleConnections upgrades to WebSocket
 //
 //	@Summary		WebSocket-соединение (v2)
-//	@Description	Обновление HTTP до WebSocket для обмена сообщениями и отслеживания статуса онлайн/оффлайн в реальном времени.
+//	@Description	Обновление HTTP до WebSocket для обмена сообщениями и отслеживания статуса онлайн/оффлайн/away в реальном времени.
 //	@Description	
 //	@Description	**Входящее сообщение (от клиента):**
 //	@Description	```json
@@ -132,19 +215,13 @@ func (h *ChatWSHandler) removeClient(userID int64) {
 //	@Description	{ "id": 456, "message": "text", "chat_id": 1, "sender_id": 123, "sent_at": "2025-01-01T00:00:00Z" }
 //	@Description	```
 //	@Description	
-//	@Description	2. Пользователь онлайн (приходит всем чат-партнёрам при подключении + новому пользователю о уже подключённых партнёрах):
+//	@Description	2. Статус пользователя:
 //	@Description	```json
-//	@Description	{ "type": "online", "user_id": 123 }
+//	@Description	{ "type": "online|away|offline", "user_id": 123, "last_seen": "2025-01-01T00:00:00Z" }
 //	@Description	```
 //	@Description	
-//	@Description	3. Пользователь оффлайн (приходит всем чат-партнёрам при отключении):
-//	@Description	```json
-//	@Description	{ "type": "offline", "user_id": 123 }
-//	@Description	```
-//	@Description	
-//	@Description	**Поведение:** При подключении нового пользователя сервер (1) уведомляет всех его чат-партнёров, что он онлайн, и (2) отправляет ему список уже подключённых партнёров. Уведомления приходят только для пользователей, состоящих в одном чате.
-//	@Description	
-//	@Description	**Heartbeat:** Сервер отправляет Ping каждые 54с. Клиент должен отвечать Pong (встроено в большинство WS-библиотек). Если Pong не получен в течение 60с — соединение закрывается.
+//	@Description	**Статусы:** online (в приложении), away (свернул/бездействует), offline (отключился)
+//	@Description	**Heartbeat:** Ping каждые 54с, Pong ожидается в течение 60с.
 //	@Tags			v2 / WebSocket
 //	@Success		101		{object}	object{}
 //	@Failure		401		{object}	object{}
@@ -164,6 +241,8 @@ func (h *ChatWSHandler) HandleConnections(w http.ResponseWriter, r *http.Request
 	h.clientsMu.Lock()
 	h.clients[user_id] = conn
 	h.clientsMu.Unlock()
+
+	h.setUserStatus(user_id, "online")
 
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
@@ -209,6 +288,10 @@ func (h *ChatWSHandler) HandleConnections(w http.ResponseWriter, r *http.Request
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
 			h.removeClient(user_id)
+			h.removeUserStatus(user_id)
+			if err := h.chatService.SaveLastSeen(ctx, user_id, time.Now()); err != nil {
+				log.Warn("failed to save last seen on disconnect", "user_id", user_id, "error", err)
+			}
 			h.notifyPartners(ctx, user_id, "offline")
 			break
 		}

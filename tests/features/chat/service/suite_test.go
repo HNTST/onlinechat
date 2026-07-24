@@ -3,6 +3,7 @@ package chat_service_test
 import (
 	"context"
 	"discord/internal/core/domain"
+	"time"
 
 	"github.com/stretchr/testify/mock"
 )
@@ -94,4 +95,17 @@ func (m *mockChatRepo) IsUserInChat(ctx context.Context, userID int64, chatID in
 func (m *mockChatRepo) GetChatPartnerIDs(ctx context.Context, userID int64) ([]int64, error) {
 	args := m.Called(ctx, userID)
 	return args.Get(0).([]int64), args.Error(1)
+}
+
+func (m *mockChatRepo) SaveLastSeen(ctx context.Context, userID int64, lastSeen time.Time) error {
+	args := m.Called(ctx, userID, lastSeen)
+	return args.Error(0)
+}
+
+func (m *mockChatRepo) GetLastSeen(ctx context.Context, userID int64) (*time.Time, error) {
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*time.Time), args.Error(1)
 }

@@ -3,6 +3,7 @@ package chat_service
 import (
 	"context"
 	"discord/internal/core/domain"
+	"time"
 )
 
 type ChatService struct {
@@ -90,6 +91,15 @@ type ChatRepository interface {
 		ctx context.Context,
 		userID int64,
 	) ([]int64, error)
+	SaveLastSeen(
+		ctx context.Context,
+		userID int64,
+		lastSeen time.Time,
+	) error
+	GetLastSeen(
+		ctx context.Context,
+		userID int64,
+	) (*time.Time, error)
 }
 
 func NewChatService(chatRepository ChatRepository) *ChatService {
