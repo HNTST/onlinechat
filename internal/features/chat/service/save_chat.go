@@ -14,46 +14,47 @@ func (s *ChatService) SaveChat(
 	targetUserID int64,
 	isGroup bool,
 ) (int64, error) {
-	var (
-		chatID int64
-		err    error
-	)
+	var chatID int64
 
-	err = s.chatRepository.Transaction(
+	err := s.chatRepository.Transaction(
 		ctx,
-		func(txCtx context.Context,
-		) error {
+		func(txCtx context.Context) error {
 
 			if !isGroup {
-				chatID, err = s.chatRepository.CheckExistsChat(
+				existsID, checkErr := s.chatRepository.CheckExistsChat(
 					txCtx,
 					userID,
 					targetUserID,
 				)
-				if err != nil {
-					if !errors.Is(err, core_errors.ErrChatNotExists) {
-						return fmt.Errorf("check existing chat: %w", err)
+				if checkErr != nil {
+					if errors.Is(checkErr, core_errors.ErrChatNotExists) {
+						chatID = 0
+					} else {
+						return fmt.Errorf("check existing chat: %w", checkErr)
 					}
+				} else {
+					chatID = existsID
 				}
 			}
 
 			if chatID == 0 {
-				chatID, err = s.chatRepository.CreateNewChat(
+				createdID, createErr := s.chatRepository.CreateNewChat(
 					txCtx,
 					name,
 					isGroup,
 				)
-				if err != nil {
-					return fmt.Errorf("create new chat: %w", err)
+				if createErr != nil {
+					return fmt.Errorf("create new chat: %w", createErr)
 				}
+				chatID = createdID
 			}
-			err = s.chatRepository.AddUserToChat(
+
+			if addErr := s.chatRepository.AddUserToChat(
 				txCtx,
 				chatID,
 				[]int64{userID, targetUserID},
-			)
-			if err != nil {
-				return fmt.Errorf("add users to chat: %w", err)
+			); addErr != nil {
+				return fmt.Errorf("add users to chat: %w", addErr)
 			}
 
 			return nil
