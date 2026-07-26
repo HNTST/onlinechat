@@ -17,10 +17,8 @@ func TestRenameChat_Success(t *testing.T) {
 	svc := chat_service.NewChatService(mockRepo)
 	ctx := context.Background()
 
-	mockRepo.On("IsUserInChat", ctx, int64(1), int64(42)).
-		Return(true, nil)
-	mockRepo.On("GetUserChats", ctx, int64(1)).
-		Return([]domain.Chat{{Id: 42, Name: "old-name", IsGroup: true}}, nil)
+	mockRepo.On("GetChatByID", ctx, int64(1), int64(42)).
+		Return(domain.Chat{Id: 42, Name: "old-name", IsGroup: true}, nil)
 	mockRepo.On("UpdateChatName", ctx, int64(42), "new-name").
 		Return(nil)
 
@@ -35,10 +33,8 @@ func TestRenameChat_NotGroup(t *testing.T) {
 	svc := chat_service.NewChatService(mockRepo)
 	ctx := context.Background()
 
-	mockRepo.On("IsUserInChat", ctx, int64(1), int64(42)).
-		Return(true, nil)
-	mockRepo.On("GetUserChats", ctx, int64(1)).
-		Return([]domain.Chat{{Id: 42, Name: "private-chat", IsGroup: false}}, nil)
+	mockRepo.On("GetChatByID", ctx, int64(1), int64(42)).
+		Return(domain.Chat{Id: 42, Name: "private-chat", IsGroup: false}, nil)
 
 	err := svc.RenameChat(ctx, 42, 1, "new-name")
 
@@ -52,8 +48,8 @@ func TestRenameChat_UserNotMember(t *testing.T) {
 	svc := chat_service.NewChatService(mockRepo)
 	ctx := context.Background()
 
-	mockRepo.On("IsUserInChat", ctx, int64(2), int64(42)).
-		Return(false, nil)
+	mockRepo.On("GetChatByID", ctx, int64(2), int64(42)).
+		Return(domain.Chat{}, core_errors.ErrChatNotExists)
 
 	err := svc.RenameChat(ctx, 42, 2, "new-name")
 
@@ -67,10 +63,8 @@ func TestRenameChat_ChatNotFound(t *testing.T) {
 	svc := chat_service.NewChatService(mockRepo)
 	ctx := context.Background()
 
-	mockRepo.On("IsUserInChat", ctx, int64(1), int64(999)).
-		Return(true, nil)
-	mockRepo.On("GetUserChats", ctx, int64(1)).
-		Return([]domain.Chat{{Id: 42, Name: "some-chat", IsGroup: true}}, nil)
+	mockRepo.On("GetChatByID", ctx, int64(1), int64(999)).
+		Return(domain.Chat{}, core_errors.ErrChatNotExists)
 
 	err := svc.RenameChat(ctx, 999, 1, "new-name")
 
@@ -79,13 +73,13 @@ func TestRenameChat_ChatNotFound(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-func TestRenameChat_IsUserInChatError(t *testing.T) {
+func TestRenameChat_GetChatByIDError(t *testing.T) {
 	mockRepo := new(mockChatRepo)
 	svc := chat_service.NewChatService(mockRepo)
 	ctx := context.Background()
 
-	mockRepo.On("IsUserInChat", ctx, int64(1), int64(42)).
-		Return(false, errors.New("db error"))
+	mockRepo.On("GetChatByID", ctx, int64(1), int64(42)).
+		Return(domain.Chat{}, errors.New("db error"))
 
 	err := svc.RenameChat(ctx, 42, 1, "new-name")
 

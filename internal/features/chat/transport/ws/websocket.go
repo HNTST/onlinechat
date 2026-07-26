@@ -17,6 +17,7 @@ const (
 	pongWait      = 60 * time.Second
 	pingPeriod    = 54 * time.Second
 	statusCleanup = 24 * time.Hour
+	maxMessageSize = 4096
 )
 
 var upgrader = websocket.Upgrader{
@@ -26,9 +27,13 @@ var upgrader = websocket.Upgrader{
 }
 
 type ChatService interface {
-	SaveMessage(ctx context.Context, message domain.Messages) error
+	SaveMessage(ctx context.Context, message domain.Messages) (int64, error)
 	GetChatMembers(ctx context.Context, chat_id int64) ([]int64, error)
 	GetChatPartnerIDs(ctx context.Context, userID int64) ([]int64, error)
+	GetUserChatIDs(ctx context.Context, userID int64) ([]int64, error)
+}
+
+type UserService interface {
 	SaveLastSeen(ctx context.Context, userID int64, lastSeen time.Time) error
 	GetLastSeen(ctx context.Context, userID int64) (*time.Time, error)
 }
@@ -38,19 +43,74 @@ type UserStatus struct {
 	LastSeen time.Time
 }
 
+type safeConn struct {
+	conn         *websocket.Conn
+	writeMu      sync.Mutex
+	closeOnce    sync.Once
+	allowedChats map[int64]struct{}
+}
+
+func newSafeConn(conn *websocket.Conn, allowedChats map[int64]struct{}) *safeConn {
+	return &safeConn{
+		conn:         conn,
+		allowedChats: allowedChats,
+	}
+}
+
+func (sc *safeConn) WriteJSON(v interface{}) error {
+	sc.writeMu.Lock()
+	defer sc.writeMu.Unlock()
+	return sc.conn.WriteJSON(v)
+}
+
+func (sc *safeConn) WriteMessage(messageType int, data []byte) error {
+	sc.writeMu.Lock()
+	defer sc.writeMu.Unlock()
+	return sc.conn.WriteMessage(messageType, data)
+}
+
+func (sc *safeConn) Close() error {
+	sc.closeOnce.Do(func() {
+		sc.conn.Close()
+	})
+	return nil
+}
+
+func (sc *safeConn) SetPongHandler(h func(string) error) {
+	sc.conn.SetPongHandler(h)
+}
+
+func (sc *safeConn) SetReadDeadline(t time.Time) {
+	sc.conn.SetReadDeadline(t)
+}
+
+func (sc *safeConn) SetReadLimit(limit int64) {
+	sc.conn.SetReadLimit(limit)
+}
+
+func (sc *safeConn) ReadMessage() (messageType int, p []byte, err error) {
+	return sc.conn.ReadMessage()
+}
+
+func (sc *safeConn) isAllowedChat(chatID int64) bool {
+	_, ok := sc.allowedChats[chatID]
+	return ok
+}
+
 type ChatWSHandler struct {
 	chatService  ChatService
-	clients      map[int64]*websocket.Conn
-	clientsMu    sync.Mutex
-	writeMu      sync.Mutex
+	userService  UserService
+	clients      map[int64]map[*safeConn]struct{}
+	clientsMu    sync.RWMutex
 	userStatuses map[int64]*UserStatus
 	statusMu     sync.RWMutex
 }
 
-func NewChatWSHandler(chatService ChatService) *ChatWSHandler {
+func NewChatWSHandler(chatService ChatService, userService UserService) *ChatWSHandler {
 	h := &ChatWSHandler{
 		chatService:  chatService,
-		clients:      make(map[int64]*websocket.Conn),
+		userService:  userService,
+		clients:      make(map[int64]map[*safeConn]struct{}),
 		userStatuses: make(map[int64]*UserStatus),
 	}
 	go h.cleanupStaleStatuses()
@@ -97,7 +157,7 @@ func (h *ChatWSHandler) getStatusForPartners(userID int64) (string, time.Time) {
 		return status, lastSeen
 	}
 
-	lastSeenDB, err := h.chatService.GetLastSeen(context.Background(), userID)
+	lastSeenDB, err := h.userService.GetLastSeen(context.Background(), userID)
 	if err != nil || lastSeenDB == nil {
 		return "offline", time.Time{}
 	}
@@ -113,7 +173,7 @@ func (h *ChatWSHandler) cleanupStaleStatuses() {
 		now := time.Now()
 		for userID, s := range h.userStatuses {
 			if s.Status == "offline" && now.Sub(s.LastSeen) > statusCleanup {
-				if err := h.chatService.SaveLastSeen(context.Background(), userID, s.LastSeen); err != nil {
+				if err := h.userService.SaveLastSeen(context.Background(), userID, s.LastSeen); err != nil {
 					log := core_logger.NewLogger()
 					log.Warn("failed to save last seen on cleanup", "user_id", userID, "error", err)
 				}
@@ -121,6 +181,53 @@ func (h *ChatWSHandler) cleanupStaleStatuses() {
 			}
 		}
 		h.statusMu.Unlock()
+	}
+}
+
+func (h *ChatWSHandler) addClient(userID int64, sc *safeConn) {
+	h.clientsMu.Lock()
+	if h.clients[userID] == nil {
+		h.clients[userID] = make(map[*safeConn]struct{})
+	}
+	h.clients[userID][sc] = struct{}{}
+	h.clientsMu.Unlock()
+}
+
+func (h *ChatWSHandler) removeClient(userID int64, sc *safeConn) {
+	h.clientsMu.Lock()
+	if sockets, ok := h.clients[userID]; ok {
+		delete(sockets, sc)
+		if len(sockets) == 0 {
+			delete(h.clients, userID)
+			h.clientsMu.Unlock()
+			h.removeUserStatus(userID)
+			return
+		}
+	}
+	h.clientsMu.Unlock()
+}
+
+func (h *ChatWSHandler) hasAnyConnection(userID int64) bool {
+	h.clientsMu.RLock()
+	defer h.clientsMu.RUnlock()
+	sockets, ok := h.clients[userID]
+	return ok && len(sockets) > 0
+}
+
+func (h *ChatWSHandler) writeToAllUserSockets(userID int64, msg interface{}) {
+	h.clientsMu.RLock()
+	sockets := make([]*safeConn, 0)
+	if s, ok := h.clients[userID]; ok {
+		for sc := range s {
+			sockets = append(sockets, sc)
+		}
+	}
+	h.clientsMu.RUnlock()
+
+	for _, sc := range sockets {
+		if err := sc.WriteJSON(msg); err != nil {
+			h.removeClient(userID, sc)
+		}
 	}
 }
 
@@ -132,24 +239,38 @@ func (h *ChatWSHandler) notifyUserAboutOnlinePartners(ctx context.Context, userI
 		return
 	}
 
-	h.clientsMu.Lock()
-	defer h.clientsMu.Unlock()
+	type partnerStatus struct {
+		id       int64
+		status   string
+		lastSeen time.Time
+	}
+	var statuses []partnerStatus
 
-	selfConn, ok := h.clients[userID]
-	if !ok {
+	for _, id := range partnerIDs {
+		if h.hasAnyConnection(id) {
+			status, lastSeen := h.getStatusForPartners(id)
+			statuses = append(statuses, partnerStatus{id: id, status: status, lastSeen: lastSeen})
+		}
+	}
+
+	if len(statuses) == 0 {
 		return
 	}
 
-	for _, id := range partnerIDs {
-		if _, online := h.clients[id]; online {
-			status, lastSeen := h.getStatusForPartners(id)
-			msg := wsStatus{Type: status, UserID: id, LastSeen: lastSeen.Format(time.RFC3339)}
-			h.writeMu.Lock()
-			err := selfConn.WriteJSON(msg)
-			h.writeMu.Unlock()
-			if err != nil {
-				selfConn.Close()
-				delete(h.clients, userID)
+	h.clientsMu.RLock()
+	sockets := make([]*safeConn, 0)
+	if s, ok := h.clients[userID]; ok {
+		for sc := range s {
+			sockets = append(sockets, sc)
+		}
+	}
+	h.clientsMu.RUnlock()
+
+	for _, ps := range statuses {
+		msg := wsStatus{Type: ps.status, UserID: ps.id, LastSeen: ps.lastSeen.Format(time.RFC3339)}
+		for _, sc := range sockets {
+			if err := sc.WriteJSON(msg); err != nil {
+				h.removeClient(userID, sc)
 				return
 			}
 		}
@@ -173,29 +294,9 @@ func (h *ChatWSHandler) notifyPartners(ctx context.Context, userID int64, status
 		msg.LastSeen = us.LastSeen.Format(time.RFC3339)
 	}
 
-	h.clientsMu.Lock()
-	defer h.clientsMu.Unlock()
-
 	for _, id := range partnerIDs {
-		if conn, ok := h.clients[id]; ok {
-			h.writeMu.Lock()
-			err := conn.WriteJSON(msg)
-			h.writeMu.Unlock()
-			if err != nil {
-				conn.Close()
-				delete(h.clients, id)
-			}
-		}
+		h.writeToAllUserSockets(id, msg)
 	}
-}
-
-func (h *ChatWSHandler) removeClient(userID int64) {
-	h.clientsMu.Lock()
-	if conn, ok := h.clients[userID]; ok {
-		conn.Close()
-		delete(h.clients, userID)
-	}
-	h.clientsMu.Unlock()
 }
 
 // HandleConnections upgrades to WebSocket
@@ -236,12 +337,21 @@ func (h *ChatWSHandler) HandleConnections(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		return
 	}
-	defer conn.Close()
 
-	h.clientsMu.Lock()
-	h.clients[user_id] = conn
-	h.clientsMu.Unlock()
+	chatIDs, err := h.chatService.GetUserChatIDs(r.Context(), user_id)
+	if err != nil {
+		conn.Close()
+		return
+	}
+	allowedChats := make(map[int64]struct{}, len(chatIDs))
+	for _, id := range chatIDs {
+		allowedChats[id] = struct{}{}
+	}
 
+	sc := newSafeConn(conn, allowedChats)
+	defer sc.Close()
+
+	h.addClient(user_id, sc)
 	h.setUserStatus(user_id, "online")
 
 	ctx, cancel := context.WithCancel(r.Context())
@@ -249,11 +359,12 @@ func (h *ChatWSHandler) HandleConnections(w http.ResponseWriter, r *http.Request
 
 	log := core_logger.FromContext(ctx)
 
-	conn.SetPongHandler(func(string) error {
-		conn.SetReadDeadline(time.Now().Add(pongWait))
+	sc.SetPongHandler(func(string) error {
+		sc.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
-	conn.SetReadDeadline(time.Now().Add(pongWait))
+	sc.SetReadDeadline(time.Now().Add(pongWait))
+	sc.SetReadLimit(maxMessageSize)
 
 	pingTicker := time.NewTicker(pingPeriod)
 	defer pingTicker.Stop()
@@ -264,19 +375,12 @@ func (h *ChatWSHandler) HandleConnections(w http.ResponseWriter, r *http.Request
 			case <-ctx.Done():
 				return
 			case <-pingTicker.C:
-				h.writeMu.Lock()
-				err := conn.WriteMessage(websocket.PingMessage, nil)
-				h.writeMu.Unlock()
-				if err != nil {
+				if err := sc.WriteMessage(websocket.PingMessage, nil); err != nil {
+					cancel()
 					return
 				}
 			}
 		}
-	}()
-
-	go func() {
-		<-ctx.Done()
-		conn.Close()
 	}()
 
 	log.Info("websocket", "user_id", user_id, "msg", "user connected")
@@ -285,17 +389,18 @@ func (h *ChatWSHandler) HandleConnections(w http.ResponseWriter, r *http.Request
 	h.notifyUserAboutOnlinePartners(ctx, user_id)
 
 	for {
-		_, msg, err := conn.ReadMessage()
+		_, msg, err := sc.ReadMessage()
 		if err != nil {
-			h.removeClient(user_id)
-			h.removeUserStatus(user_id)
-			if err := h.chatService.SaveLastSeen(ctx, user_id, time.Now()); err != nil {
-				log.Warn("failed to save last seen on disconnect", "user_id", user_id, "error", err)
+			h.removeClient(user_id, sc)
+			if !h.hasAnyConnection(user_id) {
+				if err := h.userService.SaveLastSeen(ctx, user_id, time.Now()); err != nil {
+					log.Warn("failed to save last seen on disconnect", "user_id", user_id, "error", err)
+				}
+				h.notifyPartners(ctx, user_id, "offline")
 			}
-			h.notifyPartners(ctx, user_id, "offline")
 			break
 		}
-		h.processMessage(ctx, msg, user_id)
+		h.processMessage(ctx, msg, user_id, sc)
 	}
 }
 
@@ -305,7 +410,7 @@ type wsInput struct {
 	SenderID int64  `json:"sender_id"`
 }
 
-func (h *ChatWSHandler) processMessage(ctx context.Context, data []byte, actualSenderID int64) {
+func (h *ChatWSHandler) processMessage(ctx context.Context, data []byte, actualSenderID int64, sc *safeConn) {
 	var input wsInput
 	if err := json.Unmarshal(data, &input); err != nil {
 		return
@@ -313,31 +418,31 @@ func (h *ChatWSHandler) processMessage(ctx context.Context, data []byte, actualS
 	if input.SenderID != actualSenderID {
 		return
 	}
+	if !sc.isAllowedChat(input.ChatID) {
+		return
+	}
+	if input.Message == "" {
+		return
+	}
+
 	m := domain.Messages{
 		Message:  input.Message,
 		SenderId: input.SenderID,
 		ChatId:   input.ChatID,
 		Sent_at:  time.Now(),
 	}
-	if err := h.chatService.SaveMessage(ctx, m); err != nil {
+	id, err := h.chatService.SaveMessage(ctx, m)
+	if err != nil {
 		return
 	}
+	m.Id = id
 
 	membersIDs, err := h.chatService.GetChatMembers(ctx, m.ChatId)
 	if err != nil {
 		return
 	}
-	h.clientsMu.Lock()
-	for _, id := range membersIDs {
-		if clientConn, ok := h.clients[id]; ok {
-			h.writeMu.Lock()
-			err := clientConn.WriteJSON(m)
-			h.writeMu.Unlock()
-			if err != nil {
-				clientConn.Close()
-				delete(h.clients, id)
-			}
-		}
+
+	for _, memberID := range membersIDs {
+		h.writeToAllUserSockets(memberID, m)
 	}
-	h.clientsMu.Unlock()
 }

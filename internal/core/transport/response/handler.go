@@ -44,10 +44,25 @@ func (h *HTTPResponseHandler) ErrorResponse(err error, msg string) {
 	case errors.Is(err, core_errors.ErrInvalidArgument):
 		statusCode = http.StatusBadRequest
 		logFunc = h.log.Warn
+	case errors.Is(err, core_errors.ErrParamMissing):
+		statusCode = http.StatusBadRequest
+		logFunc = h.log.Warn
+	case errors.Is(err, core_errors.ErrInvalidJSON):
+		statusCode = http.StatusBadRequest
+		logFunc = h.log.Warn
 	case errors.Is(err, core_errors.ErrUserNotFound):
 		statusCode = http.StatusNotFound
 		logFunc = h.log.Debug
+	case errors.Is(err, core_errors.ErrChatNotExists):
+		statusCode = http.StatusNotFound
+		logFunc = h.log.Warn
+	case errors.Is(err, core_errors.ErrMessageNotFound):
+		statusCode = http.StatusNotFound
+		logFunc = h.log.Warn
 	case errors.Is(err, core_errors.ErrConfict):
+		statusCode = http.StatusConflict
+		logFunc = h.log.Warn
+	case errors.Is(err, core_errors.ErrUserAlreadyExists):
 		statusCode = http.StatusConflict
 		logFunc = h.log.Warn
 	case errors.Is(err, core_errors.ErrUnauthorized):

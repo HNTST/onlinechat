@@ -11,7 +11,7 @@ type UsersHTTPHandler struct {
 	usersService UsersService
 }
 type UsersService interface {
-	GetUser(ctx context.Context, user_id *int) (domain.User, error)
+	GetUser(ctx context.Context, userID *int) (domain.User, error)
 	GetUserID(ctx context.Context, username string) (int64, error)
 }
 

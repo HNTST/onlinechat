@@ -2,6 +2,7 @@ package chats_postgres_repository
 
 import (
 	"context"
+	"discord/internal/db"
 	"fmt"
 )
 
@@ -11,15 +12,12 @@ func (r *ChatRepository) MarkMessagesAsRead(
 	userID int64,
 	lastReadMessageID int64,
 ) error {
-	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
-	defer cancel()
-
-	query := `
-		UPDATE messages
-		SET is_read = true
-		WHERE chat_id = $1 AND sender_id != $2 AND id <= $3 AND is_read = false
-	`
-	_, err := r.pool.Exec(ctx, query, chatID, userID, lastReadMessageID)
+	q := r.pool.GetQueries(ctx)
+	err := q.MarkMessagesReadByChatID(ctx, db.MarkMessagesReadByChatIDParams{
+		ChatID:   chatID,
+		SenderID: userID,
+		ID:       lastReadMessageID,
+	})
 	if err != nil {
 		return fmt.Errorf("exec error: %w", err)
 	}

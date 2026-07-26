@@ -6,8 +6,8 @@ import (
 	"fmt"
 )
 
-func (s *ChatService) GetUserChats(ctx context.Context, user_id int64) ([]domain.Chat, error) {
-	chats, err := s.chatRepository.GetUserChats(ctx, user_id)
+func (s *ChatService) GetUserChats(ctx context.Context, userID int64) ([]domain.Chat, error) {
+	chats, err := s.chatRepository.GetUserChats(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("get user chats: %w", err)
 	}

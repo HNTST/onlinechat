@@ -6,29 +6,15 @@ import (
 	"fmt"
 )
 
-func (r *ChatRepository) GetUserChats(ctx context.Context, user_id int64) ([]domain.Chat, error) {
-	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
-	defer cancel()
-
-	query := `
-		SELECT c.id, c.name, c.is_group
-		FROM chats c
-		JOIN chat_members cm ON c.id = cm.chat_id
-		WHERE cm.user_id = $1
-	`
-	rows, err := r.pool.Query(ctx, query, user_id)
+func (r *ChatRepository) GetUserChats(ctx context.Context, userID int64) ([]domain.Chat, error) {
+	q := r.pool.GetQueries(ctx)
+	rows, err := q.GetChatsByUserID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("query error: %w", err)
 	}
-	defer rows.Close()
-
-	var result []domain.Chat
-	for rows.Next() {
-		var c domain.Chat
-		if err := rows.Scan(&c.Id, &c.Name, &c.IsGroup); err != nil {
-			return nil, fmt.Errorf("scan error: %w", err)
-		}
-		result = append(result, c)
+	result := make([]domain.Chat, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, domain.Chat{Id: row.ID, Name: row.Name, IsGroup: row.IsGroup})
 	}
 	return result, nil
 }

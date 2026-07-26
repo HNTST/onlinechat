@@ -3,35 +3,43 @@ package files_postgres_repository
 import (
 	"context"
 	"discord/internal/core/domain"
+	"discord/internal/db"
 	"fmt"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 func (r *FileRepository) SaveFile(ctx context.Context, file domain.Files) (domain.Files, error) {
-	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
-	defer cancel()
+	q := r.pool.GetQueries(ctx)
 
-	query := `
-		INSERT INTO files (file_key, original_file_name, type_file, size_file)
-		VALUES($1, $2, $3, $4)
-		RETURNING id, file_key, original_file_name, type_file, size_file
-	`
-	row := r.pool.QueryRow(ctx, query, file.FileKey, file.OriginalFileName, file.TypeFile, file.SizeFile)
-	var result domain.Files
-	err := row.Scan(&result.Id, &result.FileKey, &result.OriginalFileName, &result.TypeFile, &result.SizeFile)
+	result, err := q.InsertFile(ctx, db.InsertFileParams{
+		FileKey:          file.FileKey,
+		OriginalFileName: file.OriginalFileName,
+		TypeFile:         file.TypeFile,
+		SizeFile:         file.SizeFile,
+	})
 	if err != nil {
-		return domain.Files{}, fmt.Errorf("scan error: %w", err)
+		return domain.Files{}, fmt.Errorf("insert file: %w", err)
 	}
-	return result, nil
+
+	return domain.Files{
+		Id:               result.ID,
+		FileKey:          result.FileKey,
+		OriginalFileName: result.OriginalFileName,
+		TypeFile:         result.TypeFile,
+		SizeFile:         result.SizeFile,
+	}, nil
 }
 
 func (r *FileRepository) UpdateUserAvatar(ctx context.Context, userID, fileID int64) error {
-	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
-	defer cancel()
+	q := r.pool.GetQueries(ctx)
 
-	query := `UPDATE users SET avatar_id = $1 WHERE id = $2`
-	_, err := r.pool.Exec(ctx, query, fileID, userID)
+	err := q.UpdateUserAvatarByID(ctx, db.UpdateUserAvatarByIDParams{
+		AvatarID: pgtype.Int8{Int64: fileID, Valid: true},
+		ID:       userID,
+	})
 	if err != nil {
-		return fmt.Errorf("exec error: %w", err)
+		return fmt.Errorf("update user avatar: %w", err)
 	}
 	return nil
 }

@@ -3,7 +3,6 @@ package chat_service_test
 import (
 	"context"
 	"discord/internal/core/domain"
-	"time"
 
 	"github.com/stretchr/testify/mock"
 )
@@ -47,9 +46,9 @@ func (m *mockChatRepo) GetChatMembers(ctx context.Context, chat_id int64) ([]int
 	return args.Get(0).([]int64), args.Error(1)
 }
 
-func (m *mockChatRepo) SaveMessage(ctx context.Context, message domain.Messages) error {
+func (m *mockChatRepo) SaveMessage(ctx context.Context, message domain.Messages) (int64, error) {
 	args := m.Called(ctx, message)
-	return args.Error(0)
+	return args.Get(0).(int64), args.Error(1)
 }
 
 func (m *mockChatRepo) EditMessage(ctx context.Context, messageID int64, text string) error {
@@ -57,8 +56,8 @@ func (m *mockChatRepo) EditMessage(ctx context.Context, messageID int64, text st
 	return args.Error(0)
 }
 
-func (m *mockChatRepo) SoftDeleteMessage(ctx context.Context, messageID int64) error {
-	args := m.Called(ctx, messageID)
+func (m *mockChatRepo) SoftDeleteMessage(ctx context.Context, chatID, messageID int64) error {
+	args := m.Called(ctx, chatID, messageID)
 	return args.Error(0)
 }
 
@@ -87,25 +86,20 @@ func (m *mockChatRepo) DeleteChat(ctx context.Context, chatID int64) error {
 	return args.Error(0)
 }
 
-func (m *mockChatRepo) IsUserInChat(ctx context.Context, userID int64, chatID int64) (bool, error) {
-	args := m.Called(ctx, userID, chatID)
-	return args.Bool(0), args.Error(1)
-}
-
 func (m *mockChatRepo) GetChatPartnerIDs(ctx context.Context, userID int64) ([]int64, error) {
 	args := m.Called(ctx, userID)
 	return args.Get(0).([]int64), args.Error(1)
 }
 
-func (m *mockChatRepo) SaveLastSeen(ctx context.Context, userID int64, lastSeen time.Time) error {
-	args := m.Called(ctx, userID, lastSeen)
-	return args.Error(0)
+func (m *mockChatRepo) GetChatByID(ctx context.Context, userID int64, chatID int64) (domain.Chat, error) {
+	args := m.Called(ctx, userID, chatID)
+	return args.Get(0).(domain.Chat), args.Error(1)
 }
 
-func (m *mockChatRepo) GetLastSeen(ctx context.Context, userID int64) (*time.Time, error) {
+func (m *mockChatRepo) GetUserChatIDs(ctx context.Context, userID int64) ([]int64, error) {
 	args := m.Called(ctx, userID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*time.Time), args.Error(1)
+	return args.Get(0).([]int64), args.Error(1)
 }

@@ -3,6 +3,7 @@ package core_postgres_pool
 import (
 	"context"
 	core_config "discord/internal/core/config"
+	"discord/internal/db"
 	"fmt"
 	"time"
 
@@ -30,11 +31,13 @@ type Pool interface {
 		ctx context.Context,
 	) pgx.Tx
 	OpTimeout() time.Duration
+	GetQueries(ctx context.Context) *db.Queries
 }
 
 type ConnectionPool struct {
 	*pgxpool.Pool
 	opTimeout time.Duration
+	q         *db.Queries
 }
 
 func NewConnectionPool(ctx context.Context, cfg core_config.Config_DB) (*ConnectionPool, error) {
@@ -59,6 +62,7 @@ func NewConnectionPool(ctx context.Context, cfg core_config.Config_DB) (*Connect
 	return &ConnectionPool{
 		Pool:      pool,
 		opTimeout: cfg.Timeout,
+		q:         db.New(pool),
 	}, nil
 }
 
@@ -74,6 +78,14 @@ func (p *ConnectionPool) GetTx(
 	}
 	return nil
 }
+
+func (p *ConnectionPool) GetQueries(ctx context.Context) *db.Queries {
+	if tx := p.GetTx(ctx); tx != nil {
+		return p.q.WithTx(tx)
+	}
+	return p.q
+}
+
 func (p *ConnectionPool) CtxWithTransaction(
 	ctx context.Context,
 	fn func(ctx context.Context) error,
@@ -95,5 +107,4 @@ func (p *ConnectionPool) CtxWithTransaction(
 		return fmt.Errorf("commit transaction: %w", err)
 	}
 	return nil
-	//ctx := context.WithValue(r.Context(), "log", l)
 }

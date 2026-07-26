@@ -57,9 +57,9 @@ func (m *mockChatService) GetChatMembers(ctx context.Context, chat_id int64) ([]
 	return args.Get(0).([]int64), args.Error(1)
 }
 
-func (m *mockChatService) SaveMessage(ctx context.Context, message domain.Messages) error {
+func (m *mockChatService) SaveMessage(ctx context.Context, message domain.Messages) (int64, error) {
 	args := m.Called(ctx, message)
-	return args.Error(0)
+	return args.Get(0).(int64), args.Error(1)
 }
 
 func (m *mockChatService) EditMessage(ctx context.Context, messageID int64, text string) error {
@@ -67,8 +67,8 @@ func (m *mockChatService) EditMessage(ctx context.Context, messageID int64, text
 	return args.Error(0)
 }
 
-func (m *mockChatService) SoftDeleteMessage(ctx context.Context, messageID int64) error {
-	args := m.Called(ctx, messageID)
+func (m *mockChatService) SoftDeleteMessage(ctx context.Context, chatID, messageID int64) error {
+	args := m.Called(ctx, chatID, messageID)
 	return args.Error(0)
 }
 
@@ -206,7 +206,7 @@ func TestChatTransport_DeleteMessage_Success(t *testing.T) {
 	srv := setupChatServer(t, mockSvc)
 	defer srv.Close()
 
-	mockSvc.On("SoftDeleteMessage", mock.Anything, int64(1)).Return(nil)
+	mockSvc.On("SoftDeleteMessage", mock.Anything, int64(5), int64(1)).Return(nil)
 
 	req, err := http.NewRequest(http.MethodDelete, srv.URL+"/api/v2/chats/5/messages/1", nil)
 	require.NoError(t, err)

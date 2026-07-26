@@ -19,31 +19,31 @@ type ChatService interface {
 	SaveChat(
 		ctx context.Context,
 		name string,
-		user_id,
-		target_user_id int64,
-		is_group bool,
+		userID,
+		targetUserID int64,
+		isGroup bool,
 	) (int64, error)
 	AddUserToChat(
 		ctx context.Context,
-		chat_id int64,
-		user_id []int64,
+		chatID int64,
+		userIDs []int64,
 	) error
 	GetUserChats(
 		ctx context.Context,
-		user_id int64,
+		userID int64,
 	) ([]domain.Chat, error)
 	GetChatMessages(
 		ctx context.Context,
-		chat_id int64,
+		chatID int64,
 	) ([]domain.Messages, error)
 	GetChatMembers(
 		ctx context.Context,
-		chat_id int64,
+		chatID int64,
 	) ([]int64, error)
 	SaveMessage(
 		ctx context.Context,
 		message domain.Messages,
-	) error
+	) (int64, error)
 	EditMessage(
 		ctx context.Context,
 		messageID int64,
@@ -51,6 +51,7 @@ type ChatService interface {
 	) error
 	SoftDeleteMessage(
 		ctx context.Context,
+		chatID int64,
 		messageID int64,
 	) error
 	MarkMessagesAsRead(

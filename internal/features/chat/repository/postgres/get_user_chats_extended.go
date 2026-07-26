@@ -2,8 +2,8 @@ package chats_postgres_repository
 
 import (
 	"context"
-	"discord/internal/core/domain"
 	"database/sql"
+	"discord/internal/core/domain"
 	"fmt"
 )
 
@@ -48,12 +48,12 @@ func (r *ChatRepository) GetUserChatsExtended(ctx context.Context, userID int64)
 	var result []domain.ChatInfo
 	for rows.Next() {
 		var (
-			ci           domain.ChatInfo
-			lmID         sql.NullInt64
-			lmText       sql.NullString
-			lmSenderID   sql.NullInt64
-			lmSentAt     sql.NullTime
-			lmIsRead     sql.NullBool
+			ci         domain.ChatInfo
+			lmID       sql.NullInt64
+			lmText     sql.NullString
+			lmSenderID sql.NullInt64
+			lmSentAt   sql.NullTime
+			lmIsRead   sql.NullBool
 		)
 		if err := rows.Scan(
 			&ci.Id, &ci.Name, &ci.IsGroup,

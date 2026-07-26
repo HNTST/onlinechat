@@ -7,10 +7,10 @@ import (
 
 func (s *ChatService) AddUserToChat(
 	ctx context.Context,
-	chat_id int64,
-	user_id []int64,
+	chatID int64,
+	userIDs []int64,
 ) error {
-	err := s.chatRepository.AddUserToChat(ctx, chat_id, user_id)
+	err := s.chatRepository.AddUserToChat(ctx, chatID, userIDs)
 	if err != nil {
 		return fmt.Errorf("add user to chat: %w", err)
 	}

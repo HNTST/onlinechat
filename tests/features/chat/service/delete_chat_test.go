@@ -17,10 +17,8 @@ func TestDeleteChat_Success(t *testing.T) {
 	svc := chat_service.NewChatService(mockRepo)
 	ctx := context.Background()
 
-	mockRepo.On("IsUserInChat", ctx, int64(1), int64(42)).
-		Return(true, nil)
-	mockRepo.On("GetUserChats", ctx, int64(1)).
-		Return([]domain.Chat{{Id: 42, Name: "group-chat", IsGroup: true}}, nil)
+	mockRepo.On("GetChatByID", ctx, int64(1), int64(42)).
+		Return(domain.Chat{Id: 42, Name: "group-chat", IsGroup: true}, nil)
 	mockRepo.On("DeleteChat", ctx, int64(42)).
 		Return(nil)
 
@@ -35,10 +33,8 @@ func TestDeleteChat_NotGroup(t *testing.T) {
 	svc := chat_service.NewChatService(mockRepo)
 	ctx := context.Background()
 
-	mockRepo.On("IsUserInChat", ctx, int64(1), int64(42)).
-		Return(true, nil)
-	mockRepo.On("GetUserChats", ctx, int64(1)).
-		Return([]domain.Chat{{Id: 42, Name: "private-chat", IsGroup: false}}, nil)
+	mockRepo.On("GetChatByID", ctx, int64(1), int64(42)).
+		Return(domain.Chat{Id: 42, Name: "private-chat", IsGroup: false}, nil)
 
 	err := svc.DeleteChat(ctx, 42, 1)
 
@@ -52,8 +48,8 @@ func TestDeleteChat_UserNotMember(t *testing.T) {
 	svc := chat_service.NewChatService(mockRepo)
 	ctx := context.Background()
 
-	mockRepo.On("IsUserInChat", ctx, int64(2), int64(42)).
-		Return(false, nil)
+	mockRepo.On("GetChatByID", ctx, int64(2), int64(42)).
+		Return(domain.Chat{}, core_errors.ErrChatNotExists)
 
 	err := svc.DeleteChat(ctx, 42, 2)
 
@@ -62,13 +58,13 @@ func TestDeleteChat_UserNotMember(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-func TestDeleteChat_IsUserInChatError(t *testing.T) {
+func TestDeleteChat_GetChatByIDError(t *testing.T) {
 	mockRepo := new(mockChatRepo)
 	svc := chat_service.NewChatService(mockRepo)
 	ctx := context.Background()
 
-	mockRepo.On("IsUserInChat", ctx, int64(1), int64(42)).
-		Return(false, errors.New("db error"))
+	mockRepo.On("GetChatByID", ctx, int64(1), int64(42)).
+		Return(domain.Chat{}, errors.New("db error"))
 
 	err := svc.DeleteChat(ctx, 42, 1)
 

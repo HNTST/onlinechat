@@ -2,6 +2,7 @@ package users_postgres_repository_test
 
 import (
 	"context"
+	"discord/internal/db"
 	"fmt"
 	"os"
 	"testing"
@@ -117,6 +118,13 @@ func (pw *userPoolWrapper) GetTx(_ context.Context) pgx.Tx {
 
 func (pw *userPoolWrapper) CtxWithTransaction(ctx context.Context, fn func(ctx context.Context) error) error {
 	return fn(ctx)
+}
+
+func (pw *userPoolWrapper) GetQueries(ctx context.Context) *db.Queries {
+	if tx := pw.GetTx(ctx); tx != nil {
+		return db.New(pw.Pool).WithTx(tx)
+	}
+	return db.New(pw.Pool)
 }
 
 func getEnv(key, fallback string) string {

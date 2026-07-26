@@ -9,22 +9,21 @@ import (
 )
 
 func (r *FileRepository) GetFileByID(ctx context.Context, id int64) (*domain.Files, error) {
-	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
-	defer cancel()
+	q := r.pool.GetQueries(ctx)
 
-	query := `
-		SELECT id, file_key, original_file_name, type_file, size_file
-		FROM files
-		WHERE id = $1
-	`
-	row := r.pool.QueryRow(ctx, query, id)
-	var file domain.Files
-	err := row.Scan(&file.Id, &file.FileKey, &file.OriginalFileName, &file.TypeFile, &file.SizeFile)
+	file, err := q.GetFileByID(ctx, id)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("scan error: %w", err)
+		return nil, fmt.Errorf("get file by id: %w", err)
 	}
-	return &file, nil
+
+	return &domain.Files{
+		Id:               file.ID,
+		FileKey:          file.FileKey,
+		OriginalFileName: file.OriginalFileName,
+		TypeFile:         file.TypeFile,
+		SizeFile:         file.SizeFile,
+	}, nil
 }

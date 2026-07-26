@@ -6,10 +6,10 @@ import (
 	"fmt"
 )
 
-func (s *ChatService) SaveMessage(ctx context.Context, message domain.Messages) error {
-	err := s.chatRepository.SaveMessage(ctx, message)
+func (s *ChatService) SaveMessage(ctx context.Context, message domain.Messages) (int64, error) {
+	id, err := s.chatRepository.SaveMessage(ctx, message)
 	if err != nil {
-		return fmt.Errorf("save message: %w", err)
+		return 0, fmt.Errorf("save message: %w", err)
 	}
-	return nil
+	return id, nil
 }

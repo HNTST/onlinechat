@@ -10,37 +10,24 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func (r *UserRepository) GetUser(ctx context.Context, user_id int64) (domain.User, error) {
+func (r *UserRepository) GetUser(ctx context.Context, userID int64) (domain.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
 
-	query := `
-		select id, username, password, reg, avatar_id
-		from users
-		where id=$1
-	`
-	row := r.pool.QueryRow(ctx, query, user_id)
-	var userModel UserModel
-	err := row.Scan(
-		&userModel.ID,
-		&userModel.Username,
-		&userModel.Password,
-		&userModel.Reg,
-		&userModel.AvatarID,
-	)
+	q := r.pool.GetQueries(ctx)
+	row, err := q.GetUserByID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.User{}, fmt.Errorf("user not found: %w", core_errors.ErrUserNotFound)
 		}
-		return domain.User{}, fmt.Errorf("scan error: %w", err)
+		return domain.User{}, fmt.Errorf("query error: %w", err)
 	}
-	userDomain := domain.NewUserWithAvatar(
-		userModel.ID,
-		userModel.Username,
-		userModel.Password,
-		userModel.Reg,
-		userModel.AvatarID,
-	)
-	return userDomain, err
 
+	var avatarID *int64
+	if row.AvatarID.Valid {
+		v := row.AvatarID.Int64
+		avatarID = &v
+	}
+
+	return domain.NewUserWithAvatar(row.ID, row.Username, row.Password, row.Reg, avatarID), nil
 }

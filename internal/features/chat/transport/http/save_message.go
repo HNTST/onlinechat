@@ -55,7 +55,7 @@ func (h *ChatHttpHandler) SaveMessage(w http.ResponseWriter, r *http.Request) {
 		Message:  req.Message,
 		Sent_at:  time.Now(),
 	}
-	if err := h.chatService.SaveMessage(ctx, msg); err != nil {
+	if _, err := h.chatService.SaveMessage(ctx, msg); err != nil {
 		responseHandler.ErrorResponse(err, "failed to save message")
 		return
 	}

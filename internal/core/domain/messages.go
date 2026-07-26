@@ -12,13 +12,3 @@ type Messages struct {
 	IsDeleted bool      `json:"is_deleted"`
 	IsRead    bool      `json:"is_read"`
 }
-
-// type MessagesRepository interface {
-// 	GetChatMessages(chat_id int64) ([]Messages, error)
-// 	SaveMessage(message Messages) error
-// }
-
-// type MessagesService interface {
-// 	GetUserMessages(chat_id int64) ([]Messages, error)
-// 	SaveMessage(message Messages) error
-// }

@@ -2,6 +2,7 @@ package chats_postgres_repository_test
 
 import (
 	"context"
+	"discord/internal/db"
 	"fmt"
 	"os"
 	"testing"
@@ -146,6 +147,13 @@ func (pw *chatPoolWrapper) CtxWithTransaction(ctx context.Context, fn func(ctx c
 		return fmt.Errorf("commit: %w", err)
 	}
 	return nil
+}
+
+func (pw *chatPoolWrapper) GetQueries(ctx context.Context) *db.Queries {
+	if tx := pw.GetTx(ctx); tx != nil {
+		return db.New(pw.Pool).WithTx(tx)
+	}
+	return db.New(pw.Pool)
 }
 
 func getEnv(key, fallback string) string {

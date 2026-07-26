@@ -16,7 +16,7 @@ func (s *UserRepositoryTestSuite) TestSaveUser_Success() {
 	s.Require().NoError(err)
 	s.Require().Greater(user.Id, int64(0))
 	s.Require().Equal("alice", user.Name)
-	s.Require().Equal("-1", user.Password)
+	s.Require().Equal("secure123", user.Password)
 	s.Require().False(user.Reg.IsZero())
 
 	var dbUsername string

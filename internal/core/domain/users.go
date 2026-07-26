@@ -42,18 +42,5 @@ func (u *User) Validate() error {
 	if nameLength < 3 || nameLength > 100 {
 		return fmt.Errorf("не корректный `username` длинна: %d: %w", nameLength, core_errors.ErrInvalidArgument)
 	}
-	// когда будет регистрация сделать валидацию пароля
 	return nil
 }
-
-// type UserRepository interface {
-// 	GetUser(id int64) (User, error)
-// 	GetUserID(username string) (int64, error)
-// 	SaveUser(username, password string) (int64, error)
-// }
-
-// type UserService interface {
-// 	SaveUser(username, password string) (int64, error)
-// 	GetUser(user_id int64) (User, error)
-// 	GetUserID(username string) (int64, error)
-// }

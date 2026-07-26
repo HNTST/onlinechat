@@ -51,7 +51,7 @@ func (h *ChatHttpHandler) SaveChat(
 		)
 		return
 	}
-	chat_id, err := h.chatService.SaveChat(
+	chatID, err := h.chatService.SaveChat(
 		ctx,
 		request.ChatName,
 		request.Author,
@@ -66,7 +66,7 @@ func (h *ChatHttpHandler) SaveChat(
 		return
 	}
 
-	response := SaveChatResponse{Id: chat_id}
+	response := SaveChatResponse{Id: chatID}
 
 	responseHandler.JSONResponse(response, http.StatusCreated)
 }

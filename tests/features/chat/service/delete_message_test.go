@@ -15,9 +15,9 @@ func TestSoftDeleteMessage_Success(t *testing.T) {
 	svc := chat_service.NewChatService(mockRepo)
 	ctx := context.Background()
 
-	mockRepo.On("SoftDeleteMessage", ctx, int64(1)).Return(nil)
+	mockRepo.On("SoftDeleteMessage", ctx, int64(10), int64(1)).Return(nil)
 
-	err := svc.SoftDeleteMessage(ctx, 1)
+	err := svc.SoftDeleteMessage(ctx, 10, 1)
 
 	require.NoError(t, err)
 	mockRepo.AssertExpectations(t)
@@ -28,9 +28,9 @@ func TestSoftDeleteMessage_Error(t *testing.T) {
 	svc := chat_service.NewChatService(mockRepo)
 	ctx := context.Background()
 
-	mockRepo.On("SoftDeleteMessage", ctx, int64(99)).Return(errors.New("db error"))
+	mockRepo.On("SoftDeleteMessage", ctx, int64(10), int64(99)).Return(errors.New("db error"))
 
-	err := svc.SoftDeleteMessage(ctx, 99)
+	err := svc.SoftDeleteMessage(ctx, 10, 99)
 
 	require.Error(t, err)
 	mockRepo.AssertExpectations(t)

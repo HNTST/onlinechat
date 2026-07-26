@@ -17,7 +17,7 @@ func (s *UserRepositoryTestSuite) TestGetUser_Success() {
 
 	s.Require().NoError(err)
 	s.Require().Equal("charlie", user.Name)
-	s.Require().Equal("-1", user.Password)
+	s.Require().Equal("mypass", user.Password)
 	s.Require().False(user.Reg.IsZero())
 }
 

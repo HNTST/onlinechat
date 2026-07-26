@@ -57,6 +57,12 @@ func setupFileServer(t *testing.T, svc *mockFileService) *httptest.Server {
 		mux,
 		core_http_middleware.Logger(logger),
 		core_http_middleware.Panic(),
+		core_http_middleware.Auth(func(ctx context.Context, token string) (int64, error) {
+			if token == "test-token" {
+				return 1, nil
+			}
+			return 0, fmt.Errorf("не авторизован")
+		}),
 	)
 	return httptest.NewServer(wrapped)
 }
@@ -71,7 +77,11 @@ func TestFileTransport_GetAvatarByID_Success(t *testing.T) {
 
 	mockSvc.On("GetAvatarByID", mock.Anything, int64(1)).Return(rc, "image/png", nil)
 
-	resp, err := http.Get(srv.URL + "/api/v2/user/avatar?id=1")
+	req, err := http.NewRequest(http.MethodGet, srv.URL+"/api/v2/user/avatar?id=1", nil)
+	require.NoError(t, err)
+	req.AddCookie(&http.Cookie{Name: "session_token", Value: "test-token"})
+
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
@@ -91,7 +101,11 @@ func TestFileTransport_GetAvatarByID_NotFound(t *testing.T) {
 
 	mockSvc.On("GetAvatarByID", mock.Anything, int64(999)).Return(nil, "", fmt.Errorf("file not found: %w", core_errors.ErrUserNotFound))
 
-	resp, err := http.Get(srv.URL + "/api/v2/user/avatar?id=999")
+	req, err := http.NewRequest(http.MethodGet, srv.URL+"/api/v2/user/avatar?id=999", nil)
+	require.NoError(t, err)
+	req.AddCookie(&http.Cookie{Name: "session_token", Value: "test-token"})
+
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
@@ -111,7 +125,11 @@ func TestFileTransport_GetAvatarByID_MissingParam(t *testing.T) {
 	srv := setupFileServer(t, mockSvc)
 	defer srv.Close()
 
-	resp, err := http.Get(srv.URL + "/api/v2/user/avatar")
+	req, err := http.NewRequest(http.MethodGet, srv.URL+"/api/v2/user/avatar", nil)
+	require.NoError(t, err)
+	req.AddCookie(&http.Cookie{Name: "session_token", Value: "test-token"})
+
+	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 
@@ -142,6 +160,7 @@ func uploadTestFile(t *testing.T, srv *httptest.Server, mockSvc *mockFileService
 	req, err := http.NewRequest(http.MethodPost, srv.URL+"/api/v2/user/avatar?user_id=1", &buf)
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", w.FormDataContentType())
+	req.AddCookie(&http.Cookie{Name: "session_token", Value: "test-token"})
 
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err)

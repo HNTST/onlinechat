@@ -10,13 +10,13 @@ import (
 func (s *ChatService) SaveChat(
 	ctx context.Context,
 	name string,
-	user_id,
-	target_user_id int64,
-	is_group bool,
+	userID,
+	targetUserID int64,
+	isGroup bool,
 ) (int64, error) {
 	var (
-		chat_id int64
-		err     error
+		chatID int64
+		err    error
 	)
 
 	err = s.chatRepository.Transaction(
@@ -24,11 +24,11 @@ func (s *ChatService) SaveChat(
 		func(txCtx context.Context,
 		) error {
 
-			if !is_group {
-				chat_id, err = s.chatRepository.CheckExistsChat(
+			if !isGroup {
+				chatID, err = s.chatRepository.CheckExistsChat(
 					txCtx,
-					user_id,
-					target_user_id,
+					userID,
+					targetUserID,
 				)
 				if err != nil {
 					if !errors.Is(err, core_errors.ErrChatNotExists) {
@@ -37,11 +37,11 @@ func (s *ChatService) SaveChat(
 				}
 			}
 
-			if chat_id <= 0 {
-				chat_id, err = s.chatRepository.CreateNewChat(
+			if chatID == 0 {
+				chatID, err = s.chatRepository.CreateNewChat(
 					txCtx,
 					name,
-					is_group,
+					isGroup,
 				)
 				if err != nil {
 					return fmt.Errorf("create new chat: %w", err)
@@ -49,8 +49,8 @@ func (s *ChatService) SaveChat(
 			}
 			err = s.chatRepository.AddUserToChat(
 				txCtx,
-				chat_id,
-				[]int64{user_id, target_user_id},
+				chatID,
+				[]int64{userID, targetUserID},
 			)
 			if err != nil {
 				return fmt.Errorf("add users to chat: %w", err)
@@ -60,7 +60,7 @@ func (s *ChatService) SaveChat(
 		})
 
 	if err != nil {
-		return -1, fmt.Errorf("save chat or add users to chat failed: %w", err)
+		return 0, fmt.Errorf("save chat or add users to chat failed: %w", err)
 	}
-	return chat_id, nil
+	return chatID, nil
 }

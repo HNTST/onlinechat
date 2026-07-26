@@ -13,15 +13,13 @@ func (r *UserRepository) GetUserID(ctx context.Context, username string) (int64,
 	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 	defer cancel()
 
-	query := `select id from users where username=$1`
-	row := r.pool.QueryRow(ctx, query, username)
-	var id int64
-	err := row.Scan(&id)
+	q := r.pool.GetQueries(ctx)
+	id, err := q.GetUserIDByUsername(ctx, username)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return 0, fmt.Errorf("user not found: %w", core_errors.ErrUserNotFound)
 		}
-		return 0, fmt.Errorf("scan error: %w", err)
+		return 0, fmt.Errorf("query error: %w", err)
 	}
 	return id, nil
 }

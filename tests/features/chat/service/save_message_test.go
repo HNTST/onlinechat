@@ -17,11 +17,12 @@ func TestSaveMessage_Success(t *testing.T) {
 	ctx := context.Background()
 
 	msg := domain.Messages{ChatId: 1, SenderId: 10, Message: "hello"}
-	mockRepo.On("SaveMessage", ctx, msg).Return(nil)
+	mockRepo.On("SaveMessage", ctx, msg).Return(int64(42), nil)
 
-	err := svc.SaveMessage(ctx, msg)
+	id, err := svc.SaveMessage(ctx, msg)
 
 	require.NoError(t, err)
+	require.Equal(t, int64(42), id)
 	mockRepo.AssertExpectations(t)
 }
 
@@ -31,10 +32,11 @@ func TestSaveMessage_Error(t *testing.T) {
 	ctx := context.Background()
 
 	msg := domain.Messages{ChatId: 1, SenderId: 10, Message: "hello"}
-	mockRepo.On("SaveMessage", ctx, msg).Return(errors.New("insert error"))
+	mockRepo.On("SaveMessage", ctx, msg).Return(int64(0), errors.New("insert error"))
 
-	err := svc.SaveMessage(ctx, msg)
+	id, err := svc.SaveMessage(ctx, msg)
 
 	require.Error(t, err)
+	require.Equal(t, int64(0), id)
 	mockRepo.AssertExpectations(t)
 }

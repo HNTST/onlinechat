@@ -5,31 +5,27 @@ import (
 	"discord/internal/core/domain"
 	"fmt"
 	"sort"
+
+	"github.com/jackc/pgx/v5"
 )
 
-func (r *ChatRepository) GetChatMessages(ctx context.Context, chat_id int64) ([]domain.Messages, error) {
-	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
-	defer cancel()
-
-	query := `
-		select id, sender_id, message, sent_at, is_edited, is_deleted, is_read
-		from messages
-		where chat_id = $1
-		ORDER BY id ASC
-	`
-	rows, err := r.pool.Query(ctx, query, chat_id)
+func (r *ChatRepository) GetChatMessages(ctx context.Context, chatID int64) ([]domain.Messages, error) {
+	q := r.pool.GetQueries(ctx)
+	rows, err := q.GetMessagesByChatID(ctx, chatID)
 	if err != nil {
 		return nil, fmt.Errorf("query error: %w", err)
 	}
-	defer rows.Close()
-
-	var result []domain.Messages
-	for rows.Next() {
-		var m domain.Messages
-		if err := rows.Scan(&m.Id, &m.SenderId, &m.Message, &m.Sent_at, &m.IsEdited, &m.IsDeleted, &m.IsRead); err != nil {
-			return nil, fmt.Errorf("scan error: %w", err)
-		}
-		result = append(result, m)
+	result := make([]domain.Messages, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, domain.Messages{
+			Id:        row.ID,
+			SenderId:  row.SenderID,
+			Message:   row.Message,
+			Sent_at:   row.SentAt,
+			IsEdited:  row.IsEdited,
+			IsDeleted: row.IsDeleted,
+			IsRead:    row.IsRead,
+		})
 	}
 	return result, nil
 }
@@ -43,8 +39,6 @@ func (r *ChatRepository) GetChatMessagesPaginated(
 	if limit <= 0 {
 		limit = 50
 	}
-	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
-	defer cancel()
 
 	query := `
 		select id, sender_id, message, sent_at, is_edited, is_deleted, is_read
@@ -61,7 +55,15 @@ func (r *ChatRepository) GetChatMessagesPaginated(
 	query += ` ORDER BY id DESC LIMIT $` + fmt.Sprintf("%d", len(args)+1)
 	args = append(args, limit)
 
-	rws, err := r.pool.Query(ctx, query, args...)
+	var (
+		rws pgx.Rows
+		err error
+	)
+
+	ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
+	defer cancel()
+	rws, err = r.pool.Query(ctx, query, args...)
+
 	if err != nil {
 		return nil, fmt.Errorf("query error: %w", err)
 	}

@@ -19,7 +19,7 @@ func (s *ChatRepositoryTestSuite) TestSaveMessage_Success() {
 		SenderId: userID,
 		Message:  "hello world",
 	}
-	err = s.repo.SaveMessage(context.Background(), msg)
+	_, err = s.repo.SaveMessage(context.Background(), msg)
 
 	s.Require().NoError(err)
 

@@ -10,11 +10,11 @@ import (
 )
 
 type AddUserToChatRequest struct {
-	Users_ids []int64 `json:"users_ids" validate:"required"`
+	UserIDs []int64 `json:"users_ids" validate:"required"`
 }
 type AddUserToChatResponse struct {
-	Chat_id   int64
-	Users_ids []int64
+	ChatID  int64   `json:"Chat_id"`
+	UserIDs []int64 `json:"Users_ids"`
 }
 
 // AddUserToChat adds users to an existing chat
@@ -63,7 +63,7 @@ func (h *ChatHttpHandler) AddUserToChat(
 	err = h.chatService.AddUserToChat(
 		ctx,
 		chatID,
-		request.Users_ids,
+		request.UserIDs,
 	)
 	if err != nil {
 		responseHandler.ErrorResponse(
@@ -73,8 +73,8 @@ func (h *ChatHttpHandler) AddUserToChat(
 		return
 	}
 	response := AddUserToChatResponse{
-		Chat_id:   chatID,
-		Users_ids: request.Users_ids,
+		ChatID:  chatID,
+		UserIDs: request.UserIDs,
 	}
 	responseHandler.JSONResponse(response, http.StatusOK)
 }

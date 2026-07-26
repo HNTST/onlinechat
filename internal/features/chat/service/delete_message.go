@@ -5,8 +5,8 @@ import (
 	"fmt"
 )
 
-func (s *ChatService) SoftDeleteMessage(ctx context.Context, messageID int64) error {
-	err := s.chatRepository.SoftDeleteMessage(ctx, messageID)
+func (s *ChatService) SoftDeleteMessage(ctx context.Context, chatID, messageID int64) error {
+	err := s.chatRepository.SoftDeleteMessage(ctx, chatID, messageID)
 	if err != nil {
 		return fmt.Errorf("soft delete message: %w", err)
 	}
