@@ -106,14 +106,14 @@ type ChatWSHandler struct {
 	statusMu     sync.RWMutex
 }
 
-func NewChatWSHandler(chatService ChatService, userService UserService) *ChatWSHandler {
+func NewChatWSHandler(ctx context.Context, chatService ChatService, userService UserService) *ChatWSHandler {
 	h := &ChatWSHandler{
 		chatService:  chatService,
 		userService:  userService,
 		clients:      make(map[int64]map[*safeConn]struct{}),
 		userStatuses: make(map[int64]*UserStatus),
 	}
-	go h.cleanupStaleStatuses()
+	go h.cleanupStaleStatuses(ctx)
 	return h
 }
 
@@ -164,23 +164,29 @@ func (h *ChatWSHandler) getStatusForPartners(userID int64) (string, time.Time) {
 	return "offline", *lastSeenDB
 }
 
-func (h *ChatWSHandler) cleanupStaleStatuses() {
+func (h *ChatWSHandler) cleanupStaleStatuses(ctx context.Context) {
 	ticker := time.NewTicker(time.Hour)
 	defer ticker.Stop()
 
-	for range ticker.C {
-		h.statusMu.Lock()
-		now := time.Now()
-		for userID, s := range h.userStatuses {
-			if s.Status == "offline" && now.Sub(s.LastSeen) > statusCleanup {
-				if err := h.userService.SaveLastSeen(context.Background(), userID, s.LastSeen); err != nil {
-					log := core_logger.NewLogger()
-					log.Warn("failed to save last seen on cleanup", "user_id", userID, "error", err)
+	log := core_logger.NewLogger()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			h.statusMu.Lock()
+			now := time.Now()
+			for userID, s := range h.userStatuses {
+				if s.Status == "offline" && now.Sub(s.LastSeen) > statusCleanup {
+					if err := h.userService.SaveLastSeen(context.Background(), userID, s.LastSeen); err != nil {
+						log.Warn("failed to save last seen on cleanup", "user_id", userID, "error", err)
+					}
+					delete(h.userStatuses, userID)
 				}
-				delete(h.userStatuses, userID)
 			}
+			h.statusMu.Unlock()
 		}
-		h.statusMu.Unlock()
 	}
 }
 

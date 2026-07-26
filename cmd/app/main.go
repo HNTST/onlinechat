@@ -74,7 +74,7 @@ func main() {
 	chatService := chat_service.NewChatService(chatRepo)
 	chatTransport := chat_transport_http.NewChatHttpHandler(chatService)
 	chatRoutes := chatTransport.Routes()
-	chatWSHandler := chat_transport_ws.NewChatWSHandler(chatService, usersService)
+	chatWSHandler := chat_transport_ws.NewChatWSHandler(ctx, chatService, usersService)
 
 	// --- V2 File module ---
 	filePostgresRepo := files_postgres_repository.NewFileRepository(pgPool)
