@@ -12,6 +12,9 @@ import (
 	core_postgres_pool "discord/internal/core/repository/postgres/pool"
 	core_http_middleware "discord/internal/core/transport/middleware"
 	core_http_server "discord/internal/core/transport/server"
+	auth_postgres_repository "discord/internal/features/auth/repository/postgres"
+	auth_service "discord/internal/features/auth/service"
+	auth_transport_http "discord/internal/features/auth/transport/http"
 	chats_postgres_repository "discord/internal/features/chat/repository/postgres"
 	chat_service "discord/internal/features/chat/service"
 	chat_transport_http "discord/internal/features/chat/transport/http"
@@ -20,9 +23,6 @@ import (
 	files_postgres_repository "discord/internal/features/files/repository/postgres"
 	files_service "discord/internal/features/files/service"
 	files_transport_http "discord/internal/features/files/transport/http"
-	auth_postgres_repository "discord/internal/features/auth/repository/postgres"
-	auth_service "discord/internal/features/auth/service"
-	auth_transport_http "discord/internal/features/auth/transport/http"
 	users_postgres_repository "discord/internal/features/user/repository/postgres"
 	users_service "discord/internal/features/user/service"
 	users_transport_http "discord/internal/features/user/transport/http"
@@ -78,11 +78,13 @@ func main() {
 
 	// --- V2 File module ---
 	filePostgresRepo := files_postgres_repository.NewFileRepository(pgPool)
+	logger.Info("Подлючение к базе данных Minio")
 	fileStorage, err := files_repository.NewMinioStorage(cfg.Config_Minio)
 	if err != nil {
 		logger.Error("Minio storage init error", "error", err)
 		return
 	}
+	logger.Info("Успешное подключение к MinIO")
 	fileService := files_service.NewFileService(filePostgresRepo, fileStorage)
 	fileTransport := files_transport_http.NewFileHTTPHandler(fileService)
 	fileRoutes := fileTransport.Routes()
