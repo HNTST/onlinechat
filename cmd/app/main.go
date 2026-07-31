@@ -47,6 +47,7 @@ func main() {
 	pgPool, err := core_postgres_pool.NewConnectionPool(ctx, cfg.Config_DB)
 	if err != nil {
 		logger.Error("PgPool run error", "error", err)
+		return
 	}
 	logger.Info("Успешное подлючение к базе postgres")
 

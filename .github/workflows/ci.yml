@@ -42,10 +42,15 @@ jobs:
       - name: Deploy на Dokploy
         if: success()
         env:
-          DOKPLOY_WEBHOOK_URL: ${{ secrets.DOKPLOY_WEBHOOK_URL }}
+          DOKPLOY_API_URL: ${{ secrets.DOKPLOY_API_URL }}
+          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+          DOKPLOY_APPLICATION_ID: ${{ secrets.DOKPLOY_APPLICATION_ID }}
         run: |
-          if [ -z "$DOKPLOY_WEBHOOK_URL" ]; then
-            echo "Секрет DOKPLOY_WEBHOOK_URL не задан — шаг деплоя пропущен"
+          if [ -z "$DOKPLOY_API_URL" ] || [ -z "$DOKPLOY_API_KEY" ] || [ -z "$DOKPLOY_APPLICATION_ID" ]; then
+            echo "Секреты Dokploy не заданы — шаг деплоя пропущен"
             exit 0
           fi
-          curl -fsSL -X POST "$DOKPLOY_WEBHOOK_URL"
+          curl -fsSL -X POST "$DOKPLOY_API_URL/api/application.deploy" \
+            -H "Content-Type: application/json" \
+            -H "x-api-key: $DOKPLOY_API_KEY" \
+            -d "{\"applicationId\": \"$DOKPLOY_APPLICATION_ID\"}"
