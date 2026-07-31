@@ -16,3 +16,6 @@ UPDATE users SET last_seen_at = $1 WHERE id = $2;
 
 -- name: GetUserLastSeenByID :one
 SELECT last_seen_at FROM users WHERE id = $1;
+
+-- name: UpdateUserAvatarByID :exec
+UPDATE users SET avatar_id = $1 WHERE id = $2;

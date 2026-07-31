@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Установка Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache: true
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.60.0
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: golangci-lint
+        run: golangci-lint run
+
+      - name: Поднятие тестовой инфраструктуры
+        run: docker compose -f docker-compose.test.yml up --build --wait -d
+
+      - name: go test
+        run: APP_ENV=test go test -p 1 -count=1 ./...
+
+      - name: Остановка тестовой инфраструктуры
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v
+
+      - name: Deploy на Dokploy
+        if: success()
+        env:
+          DOKPLOY_WEBHOOK_URL: ${{ secrets.DOKPLOY_WEBHOOK_URL }}
+        run: |
+          if [ -z "$DOKPLOY_WEBHOOK_URL" ]; then
+            echo "Секрет DOKPLOY_WEBHOOK_URL не задан — шаг деплоя пропущен"
+            exit 0
+          fi
+          curl -fsSL -X POST "$DOKPLOY_WEBHOOK_URL"

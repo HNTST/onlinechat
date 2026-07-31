@@ -16,6 +16,7 @@ type UsersRepository interface {
 	GetUserID(ctx context.Context, username string) (int64, error)
 	SaveLastSeen(ctx context.Context, userID int64, lastSeen time.Time) error
 	GetLastSeen(ctx context.Context, userID int64) (*time.Time, error)
+	UpdateAvatar(ctx context.Context, userID, fileID int64) error
 }
 
 func NewUsersService(usersRepository UsersRepository) *UsersService {

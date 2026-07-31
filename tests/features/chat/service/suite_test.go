@@ -51,13 +51,13 @@ func (m *mockChatRepo) SaveMessage(ctx context.Context, message domain.Messages)
 	return args.Get(0).(int64), args.Error(1)
 }
 
-func (m *mockChatRepo) EditMessage(ctx context.Context, messageID int64, text string) error {
-	args := m.Called(ctx, messageID, text)
+func (m *mockChatRepo) EditMessage(ctx context.Context, chatID, messageID, userID int64, text string) error {
+	args := m.Called(ctx, chatID, messageID, userID, text)
 	return args.Error(0)
 }
 
-func (m *mockChatRepo) SoftDeleteMessage(ctx context.Context, chatID, messageID int64) error {
-	args := m.Called(ctx, chatID, messageID)
+func (m *mockChatRepo) SoftDeleteMessage(ctx context.Context, chatID, messageID, userID int64) error {
+	args := m.Called(ctx, chatID, messageID, userID)
 	return args.Error(0)
 }
 

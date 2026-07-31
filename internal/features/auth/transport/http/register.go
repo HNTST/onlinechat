@@ -1,6 +1,7 @@
 package auth_transport_http
 
 import (
+	"discord/internal/core/domain"
 	core_http_request "discord/internal/core/transport/request"
 	"encoding/json"
 	"net/http"
@@ -42,7 +43,7 @@ func (h *AuthHTTPHandler) Register(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		Secure:   false,
 		SameSite: http.SameSiteLaxMode,
-		Expires:  time.Now().UTC().Add(sessionCookieTTL),
+		Expires:  time.Now().UTC().Add(domain.SessionTTL),
 	})
 
 	user.Password = ""

@@ -62,13 +62,13 @@ func (m *mockChatService) SaveMessage(ctx context.Context, message domain.Messag
 	return args.Get(0).(int64), args.Error(1)
 }
 
-func (m *mockChatService) EditMessage(ctx context.Context, messageID int64, text string) error {
-	args := m.Called(ctx, messageID, text)
+func (m *mockChatService) EditMessage(ctx context.Context, chatID, messageID, userID int64, text string) error {
+	args := m.Called(ctx, chatID, messageID, userID, text)
 	return args.Error(0)
 }
 
-func (m *mockChatService) SoftDeleteMessage(ctx context.Context, chatID, messageID int64) error {
-	args := m.Called(ctx, chatID, messageID)
+func (m *mockChatService) SoftDeleteMessage(ctx context.Context, chatID, messageID, userID int64) error {
+	args := m.Called(ctx, chatID, messageID, userID)
 	return args.Error(0)
 }
 
@@ -119,6 +119,43 @@ func setupChatServer(t *testing.T, svc *mockChatService, userID ...int64) *httpt
 	return httptest.NewServer(wrapped)
 }
 
+func TestChatTransport_SaveChat_Success(t *testing.T) {
+	mockSvc := new(mockChatService)
+	srv := setupChatServer(t, mockSvc, 1)
+	defer srv.Close()
+
+	mockSvc.On("SaveChat", mock.Anything, "new-chat", int64(1), int64(2), false).Return(int64(42), nil)
+
+	bodyReader := strings.NewReader(`{"chat_name": "new-chat", "target_user": 2, "is_group": false}`)
+	resp, err := http.Post(srv.URL+"/api/v2/chat", "application/json", bodyReader)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	require.Equal(t, http.StatusCreated, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	var result map[string]any
+	require.NoError(t, json.Unmarshal(body, &result))
+	require.Equal(t, float64(42), result["chat_id"])
+	mockSvc.AssertExpectations(t)
+}
+
+func TestChatTransport_SaveChat_Unauthorized(t *testing.T) {
+	mockSvc := new(mockChatService)
+	srv := setupChatServer(t, mockSvc)
+	defer srv.Close()
+
+	bodyReader := strings.NewReader(`{"chat_name": "new-chat", "target_user": 2, "is_group": false}`)
+	resp, err := http.Post(srv.URL+"/api/v2/chat", "application/json", bodyReader)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+	mockSvc.AssertNotCalled(t, "SaveChat")
+}
+
 func TestChatTransport_AddUserToChat_Success(t *testing.T) {
 	mockSvc := new(mockChatService)
 	srv := setupChatServer(t, mockSvc)
@@ -165,10 +202,10 @@ func TestChatTransport_AddUserToChat_InvalidPathParam(t *testing.T) {
 
 func TestChatTransport_EditMessage_Success(t *testing.T) {
 	mockSvc := new(mockChatService)
-	srv := setupChatServer(t, mockSvc)
+	srv := setupChatServer(t, mockSvc, 1)
 	defer srv.Close()
 
-	mockSvc.On("EditMessage", mock.Anything, int64(1), "new text").Return(nil)
+	mockSvc.On("EditMessage", mock.Anything, int64(5), int64(1), int64(1), "new text").Return(nil)
 
 	bodyReader := strings.NewReader(`{"text": "new text"}`)
 	req, err := http.NewRequest(http.MethodPut, srv.URL+"/api/v2/chats/5/messages/1", bodyReader)
@@ -181,6 +218,24 @@ func TestChatTransport_EditMessage_Success(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	mockSvc.AssertExpectations(t)
+}
+
+func TestChatTransport_EditMessage_Unauthorized(t *testing.T) {
+	mockSvc := new(mockChatService)
+	srv := setupChatServer(t, mockSvc)
+	defer srv.Close()
+
+	bodyReader := strings.NewReader(`{"text": "new text"}`)
+	req, err := http.NewRequest(http.MethodPut, srv.URL+"/api/v2/chats/5/messages/1", bodyReader)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+	mockSvc.AssertNotCalled(t, "EditMessage")
 }
 
 func TestChatTransport_EditMessage_EmptyBody(t *testing.T) {
@@ -203,10 +258,10 @@ func TestChatTransport_EditMessage_EmptyBody(t *testing.T) {
 
 func TestChatTransport_DeleteMessage_Success(t *testing.T) {
 	mockSvc := new(mockChatService)
-	srv := setupChatServer(t, mockSvc)
+	srv := setupChatServer(t, mockSvc, 1)
 	defer srv.Close()
 
-	mockSvc.On("SoftDeleteMessage", mock.Anything, int64(5), int64(1)).Return(nil)
+	mockSvc.On("SoftDeleteMessage", mock.Anything, int64(5), int64(1), int64(1)).Return(nil)
 
 	req, err := http.NewRequest(http.MethodDelete, srv.URL+"/api/v2/chats/5/messages/1", nil)
 	require.NoError(t, err)
@@ -217,6 +272,22 @@ func TestChatTransport_DeleteMessage_Success(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	mockSvc.AssertExpectations(t)
+}
+
+func TestChatTransport_DeleteMessage_Unauthorized(t *testing.T) {
+	mockSvc := new(mockChatService)
+	srv := setupChatServer(t, mockSvc)
+	defer srv.Close()
+
+	req, err := http.NewRequest(http.MethodDelete, srv.URL+"/api/v2/chats/5/messages/1", nil)
+	require.NoError(t, err)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+	mockSvc.AssertNotCalled(t, "SoftDeleteMessage")
 }
 
 func TestChatTransport_DeleteMessage_InvalidID(t *testing.T) {

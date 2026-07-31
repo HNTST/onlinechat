@@ -53,6 +53,25 @@ func (q *Queries) EditMessageText(ctx context.Context, arg EditMessageTextParams
 	return err
 }
 
+const getMessageOwner = `-- name: GetMessageOwner :one
+SELECT sender_id, chat_id, is_deleted
+FROM messages
+WHERE id = $1
+`
+
+type GetMessageOwnerRow struct {
+	SenderID  int64 `json:"sender_id"`
+	ChatID    int64 `json:"chat_id"`
+	IsDeleted bool  `json:"is_deleted"`
+}
+
+func (q *Queries) GetMessageOwner(ctx context.Context, id int64) (GetMessageOwnerRow, error) {
+	row := q.db.QueryRow(ctx, getMessageOwner, id)
+	var i GetMessageOwnerRow
+	err := row.Scan(&i.SenderID, &i.ChatID, &i.IsDeleted)
+	return i, err
+}
+
 const getMessagesByChatID = `-- name: GetMessagesByChatID :many
 SELECT id, sender_id, message, sent_at, is_edited, is_deleted, is_read
 FROM messages

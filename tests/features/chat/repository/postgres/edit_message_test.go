@@ -19,7 +19,7 @@ func (s *ChatRepositoryTestSuite) TestEditMessage_Success() {
 		chatID, userID).Scan(&msgID)
 	s.Require().NoError(err)
 
-	err = s.repo.EditMessage(context.Background(), msgID, "updated text")
+	err = s.repo.EditMessage(context.Background(), chatID, msgID, userID, "updated text")
 	s.Require().NoError(err)
 
 	var messageText string
@@ -32,7 +32,7 @@ func (s *ChatRepositoryTestSuite) TestEditMessage_Success() {
 }
 
 func (s *ChatRepositoryTestSuite) TestEditMessage_NotFound() {
-	err := s.repo.EditMessage(context.Background(), 99999, "text")
+	err := s.repo.EditMessage(context.Background(), 0, 99999, 0, "text")
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, core_errors.ErrMessageNotFound)
 }
@@ -51,7 +51,46 @@ func (s *ChatRepositoryTestSuite) TestEditMessage_DeletedMessage() {
 		chatID, userID).Scan(&msgID)
 	s.Require().NoError(err)
 
-	err = s.repo.EditMessage(context.Background(), msgID, "should fail")
+	err = s.repo.EditMessage(context.Background(), chatID, msgID, userID, "should fail")
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, core_errors.ErrMessageNotFound)
+}
+
+func (s *ChatRepositoryTestSuite) TestEditMessage_NotOwner() {
+	ownerID := s.createUser("owner", "pass")
+	otherID := s.createUser("other", "pass")
+
+	var chatID int64
+	err := s.pool.QueryRow(context.Background(),
+		"INSERT INTO chats (name) VALUES('edit-owner-chat') RETURNING id").Scan(&chatID)
+	s.Require().NoError(err)
+
+	var msgID int64
+	err = s.pool.QueryRow(context.Background(),
+		"INSERT INTO messages (chat_id, sender_id, message) VALUES($1,$2,'by-owner') RETURNING id",
+		chatID, ownerID).Scan(&msgID)
+	s.Require().NoError(err)
+
+	err = s.repo.EditMessage(context.Background(), chatID, msgID, otherID, "hijack")
+	s.Require().Error(err)
+	s.Require().ErrorIs(err, core_errors.ErrUnauthorized)
+}
+
+func (s *ChatRepositoryTestSuite) TestEditMessage_WrongChat() {
+	userID := s.createUser("editor3", "pass")
+
+	var chatID int64
+	err := s.pool.QueryRow(context.Background(),
+		"INSERT INTO chats (name) VALUES('edit-chat3') RETURNING id").Scan(&chatID)
+	s.Require().NoError(err)
+
+	var msgID int64
+	err = s.pool.QueryRow(context.Background(),
+		"INSERT INTO messages (chat_id, sender_id, message) VALUES($1,$2,'own-msg') RETURNING id",
+		chatID, userID).Scan(&msgID)
+	s.Require().NoError(err)
+
+	err = s.repo.EditMessage(context.Background(), chatID+999, msgID, userID, "wrong chat")
+	s.Require().Error(err)
+	s.Require().ErrorIs(err, core_errors.ErrUnauthorized)
 }

@@ -14,6 +14,11 @@ SELECT EXISTS(SELECT 1 FROM messages WHERE id = $1);
 -- name: CheckMessageExistsInChat :one
 SELECT EXISTS(SELECT 1 FROM messages WHERE id = $1 AND chat_id = $2);
 
+-- name: GetMessageOwner :one
+SELECT sender_id, chat_id, is_deleted
+FROM messages
+WHERE id = $1;
+
 -- name: EditMessageText :exec
 UPDATE messages
 SET message = $1, is_edited = true

@@ -32,7 +32,7 @@ func (s *FileService) UploadAvatar(ctx context.Context, userID int64, file io.Re
 			return fmt.Errorf("save file: %w", innerErr)
 		}
 
-		if innerErr = s.fileRepository.UpdateUserAvatar(txCtx, userID, savedFile.Id); innerErr != nil {
+		if innerErr = s.usersService.UpdateAvatar(txCtx, userID, savedFile.Id); innerErr != nil {
 			return fmt.Errorf("update user avatar: %w", innerErr)
 		}
 

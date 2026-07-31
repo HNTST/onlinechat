@@ -39,3 +39,8 @@ func (m *mockUserRepo) GetLastSeen(ctx context.Context, userID int64) (*time.Tim
 	}
 	return args.Get(0).(*time.Time), args.Error(1)
 }
+
+func (m *mockUserRepo) UpdateAvatar(ctx context.Context, userID, fileID int64) error {
+	args := m.Called(ctx, userID, fileID)
+	return args.Error(0)
+}

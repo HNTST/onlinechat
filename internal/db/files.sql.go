@@ -7,8 +7,6 @@ package db
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const getFileByID = `-- name: GetFileByID :one
@@ -59,18 +57,4 @@ func (q *Queries) InsertFile(ctx context.Context, arg InsertFileParams) (File, e
 		&i.SizeFile,
 	)
 	return i, err
-}
-
-const updateUserAvatarByID = `-- name: UpdateUserAvatarByID :exec
-UPDATE users SET avatar_id = $1 WHERE id = $2
-`
-
-type UpdateUserAvatarByIDParams struct {
-	AvatarID pgtype.Int8 `json:"avatar_id"`
-	ID       int64       `json:"id"`
-}
-
-func (q *Queries) UpdateUserAvatarByID(ctx context.Context, arg UpdateUserAvatarByIDParams) error {
-	_, err := q.db.Exec(ctx, updateUserAvatarByID, arg.AvatarID, arg.ID)
-	return err
 }

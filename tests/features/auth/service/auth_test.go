@@ -40,21 +40,21 @@ func (m *mockAuthRepo) DeleteSession(ctx context.Context, token string) error {
 	return args.Error(0)
 }
 
-type mockUsersRepo struct {
+type mockUsersService struct {
 	mock.Mock
 }
 
-func (m *mockUsersRepo) SaveUser(ctx context.Context, user domain.User) (domain.User, error) {
+func (m *mockUsersService) SaveUser(ctx context.Context, user domain.User) (domain.User, error) {
 	args := m.Called(ctx, user)
 	return args.Get(0).(domain.User), args.Error(1)
 }
 
-func (m *mockUsersRepo) GetUser(ctx context.Context, userID int64) (domain.User, error) {
+func (m *mockUsersService) GetUser(ctx context.Context, userID *int) (domain.User, error) {
 	args := m.Called(ctx, userID)
 	return args.Get(0).(domain.User), args.Error(1)
 }
 
-func (m *mockUsersRepo) GetUserID(ctx context.Context, username string) (int64, error) {
+func (m *mockUsersService) GetUserID(ctx context.Context, username string) (int64, error) {
 	args := m.Called(ctx, username)
 	return args.Get(0).(int64), args.Error(1)
 }
@@ -68,7 +68,7 @@ func hashPassword(t *testing.T, password string) string {
 
 func TestLogin_Success(t *testing.T) {
 	mockAuth := new(mockAuthRepo)
-	mockUsers := new(mockUsersRepo)
+	mockUsers := new(mockUsersService)
 	svc := auth_service.NewAuthService(mockAuth, mockUsers)
 	ctx := context.Background()
 
@@ -77,7 +77,8 @@ func TestLogin_Success(t *testing.T) {
 	user := domain.NewUserWithAvatar(1, "alice", hashed, time.Now(), nil)
 
 	mockUsers.On("GetUserID", ctx, "alice").Return(int64(1), nil)
-	mockUsers.On("GetUser", ctx, int64(1)).Return(user, nil)
+	expectedID := 1
+	mockUsers.On("GetUser", ctx, &expectedID).Return(user, nil)
 	mockAuth.On("CreateSession", ctx, int64(1), mock.AnythingOfType("string"), mock.AnythingOfType("time.Time")).
 		Return(domain.Session{ID: 1, UserID: 1, Token: "test-token", ExpiresAt: time.Now().Add(time.Hour)}, nil)
 
@@ -92,7 +93,7 @@ func TestLogin_Success(t *testing.T) {
 
 func TestLogin_WrongPassword(t *testing.T) {
 	mockAuth := new(mockAuthRepo)
-	mockUsers := new(mockUsersRepo)
+	mockUsers := new(mockUsersService)
 	svc := auth_service.NewAuthService(mockAuth, mockUsers)
 	ctx := context.Background()
 
@@ -100,7 +101,8 @@ func TestLogin_WrongPassword(t *testing.T) {
 	user := domain.NewUserWithAvatar(1, "alice", hashed, time.Now(), nil)
 
 	mockUsers.On("GetUserID", ctx, "alice").Return(int64(1), nil)
-	mockUsers.On("GetUser", ctx, int64(1)).Return(user, nil)
+	expectedID := 1
+	mockUsers.On("GetUser", ctx, &expectedID).Return(user, nil)
 
 	_, _, err := svc.Login(ctx, "alice", "wrongpassword")
 
@@ -112,7 +114,7 @@ func TestLogin_WrongPassword(t *testing.T) {
 
 func TestLogin_UserNotFound(t *testing.T) {
 	mockAuth := new(mockAuthRepo)
-	mockUsers := new(mockUsersRepo)
+	mockUsers := new(mockUsersService)
 	svc := auth_service.NewAuthService(mockAuth, mockUsers)
 	ctx := context.Background()
 
@@ -128,7 +130,7 @@ func TestLogin_UserNotFound(t *testing.T) {
 
 func TestLogout_Success(t *testing.T) {
 	mockAuth := new(mockAuthRepo)
-	mockUsers := new(mockUsersRepo)
+	mockUsers := new(mockUsersService)
 	svc := auth_service.NewAuthService(mockAuth, mockUsers)
 	ctx := context.Background()
 
@@ -142,7 +144,7 @@ func TestLogout_Success(t *testing.T) {
 
 func TestValidateSession_Success(t *testing.T) {
 	mockAuth := new(mockAuthRepo)
-	mockUsers := new(mockUsersRepo)
+	mockUsers := new(mockUsersService)
 	svc := auth_service.NewAuthService(mockAuth, mockUsers)
 	ctx := context.Background()
 
@@ -164,7 +166,7 @@ func TestValidateSession_Success(t *testing.T) {
 
 func TestValidateSession_Expired(t *testing.T) {
 	mockAuth := new(mockAuthRepo)
-	mockUsers := new(mockUsersRepo)
+	mockUsers := new(mockUsersService)
 	svc := auth_service.NewAuthService(mockAuth, mockUsers)
 	ctx := context.Background()
 
@@ -187,7 +189,7 @@ func TestValidateSession_Expired(t *testing.T) {
 
 func TestValidateSession_TokenNotFound(t *testing.T) {
 	mockAuth := new(mockAuthRepo)
-	mockUsers := new(mockUsersRepo)
+	mockUsers := new(mockUsersService)
 	svc := auth_service.NewAuthService(mockAuth, mockUsers)
 	ctx := context.Background()
 

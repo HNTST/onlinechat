@@ -7,8 +7,8 @@ import (
 )
 
 type AuthService struct {
-	authRepo    AuthRepository
-	usersRepo   UsersRepository
+	authRepo     AuthRepository
+	usersService UserService
 }
 
 type AuthRepository interface {
@@ -18,15 +18,17 @@ type AuthRepository interface {
 	DeleteSession(ctx context.Context, token string) error
 }
 
-type UsersRepository interface {
+// UserService — интерфейс для user/service, чтобы AuthService
+// вызывал сервисный слой, а не репозиторий напрямую.
+type UserService interface {
 	SaveUser(ctx context.Context, user domain.User) (domain.User, error)
-	GetUser(ctx context.Context, userID int64) (domain.User, error)
+	GetUser(ctx context.Context, userID *int) (domain.User, error)
 	GetUserID(ctx context.Context, username string) (int64, error)
 }
 
-func NewAuthService(authRepo AuthRepository, usersRepo UsersRepository) *AuthService {
+func NewAuthService(authRepo AuthRepository, usersService UserService) *AuthService {
 	return &AuthService{
-		authRepo:  authRepo,
-		usersRepo: usersRepo,
+		authRepo:     authRepo,
+		usersService: usersService,
 	}
 }

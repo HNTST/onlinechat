@@ -9,12 +9,12 @@ import (
 type FileService struct {
 	fileRepository FileRepository
 	fileStorage    FileStorage
+	usersService   UserService
 }
 
 type FileRepository interface {
 	Transaction(ctx context.Context, fn func(txCtx context.Context) error) error
 	SaveFile(ctx context.Context, file domain.Files) (domain.Files, error)
-	UpdateUserAvatar(ctx context.Context, userID, fileID int64) error
 	GetFileByID(ctx context.Context, id int64) (*domain.Files, error)
 }
 
@@ -24,9 +24,16 @@ type FileStorage interface {
 	Remove(ctx context.Context, objectName string) error
 }
 
-func NewFileService(fileRepository FileRepository, fileStorage FileStorage) *FileService {
+// UserService — интерфейс для user/service, чтобы FileService
+// вызывал сервисный слой, а не репозиторий напрямую.
+type UserService interface {
+	UpdateAvatar(ctx context.Context, userID, fileID int64) error
+}
+
+func NewFileService(fileRepository FileRepository, fileStorage FileStorage, usersService UserService) *FileService {
 	return &FileService{
 		fileRepository: fileRepository,
 		fileStorage:    fileStorage,
+		usersService:   usersService,
 	}
 }

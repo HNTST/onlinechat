@@ -3,6 +3,7 @@ package chat_transport_http
 import (
 	core_errors "discord/internal/core/errors"
 	core_logger "discord/internal/core/logger"
+	core_http_middleware "discord/internal/core/transport/middleware"
 	core_http_response "discord/internal/core/transport/response"
 	"errors"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 // DeleteMessage soft-deletes a message
 //
 //	@Summary		Мягкое удаление сообщения
-//	@Description	Помечает сообщение как удалённое (is_deleted=true, текст очищается). Проверяется принадлежность сообщения чату.
+//	@Description	Помечает сообщение как удалённое (is_deleted=true, текст очищается). Проверяется членство в чате и авторство сообщения.
 //	@Tags			v2 / Чаты
 //	@Accept			json
 //	@Produce		json
@@ -50,13 +51,19 @@ func (h *ChatHttpHandler) DeleteMessage(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := h.chatService.SoftDeleteMessage(ctx, chatID, messageID); err != nil {
+	userID, ok := ctx.Value(core_http_middleware.UserIDKey).(int64)
+	if !ok {
+		responseHandler.ErrorResponse(core_errors.ErrUnauthorized, "не авторизован")
+		return
+	}
+
+	if err := h.chatService.SoftDeleteMessage(ctx, chatID, messageID, userID); err != nil {
 		if errors.Is(err, core_errors.ErrMessageNotFound) {
 			responseHandler.ErrorResponse(core_errors.ErrMessageNotFound, "message not found")
 			return
 		}
 		if errors.Is(err, core_errors.ErrUnauthorized) {
-			responseHandler.ErrorResponse(core_errors.ErrUnauthorized, "message belongs to another chat")
+			responseHandler.ErrorResponse(core_errors.ErrUnauthorized, "message belongs to another chat or not owned by user")
 			return
 		}
 		responseHandler.ErrorResponse(err, "failed to delete message")

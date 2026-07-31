@@ -28,14 +28,18 @@ func (m *mockFileRepository) SaveFile(ctx context.Context, file domain.Files) (d
 	return args.Get(0).(domain.Files), args.Error(1)
 }
 
-func (m *mockFileRepository) UpdateUserAvatar(ctx context.Context, userID, fileID int64) error {
-	args := m.Called(ctx, userID, fileID)
-	return args.Error(0)
-}
-
 func (m *mockFileRepository) GetFileByID(ctx context.Context, id int64) (*domain.Files, error) {
 	args := m.Called(ctx, id)
 	return args.Get(0).(*domain.Files), args.Error(1)
+}
+
+type mockUserService struct {
+	mock.Mock
+}
+
+func (m *mockUserService) UpdateAvatar(ctx context.Context, userID, fileID int64) error {
+	args := m.Called(ctx, userID, fileID)
+	return args.Error(0)
 }
 
 type mockFileStorage struct {
@@ -60,7 +64,8 @@ func (m *mockFileStorage) Remove(ctx context.Context, objectName string) error {
 func TestUploadAvatar_StorageCleanupOnDatabaseError(t *testing.T) {
 	mockRepo := new(mockFileRepository)
 	mockStorage := new(mockFileStorage)
-	svc := files_service.NewFileService(mockRepo, mockStorage)
+	mockUsers := new(mockUserService)
+	svc := files_service.NewFileService(mockRepo, mockStorage, mockUsers)
 
 	ctx := context.Background()
 	fileContent := []byte("fake-image-data")
@@ -91,7 +96,8 @@ func TestUploadAvatar_StorageCleanupOnDatabaseError(t *testing.T) {
 func TestUploadAvatar_UniqueUUIDName(t *testing.T) {
 	mockRepo := new(mockFileRepository)
 	mockStorage := new(mockFileStorage)
-	svc := files_service.NewFileService(mockRepo, mockStorage)
+	mockUsers := new(mockUserService)
+	svc := files_service.NewFileService(mockRepo, mockStorage, mockUsers)
 
 	ctx := context.Background()
 	fileContent := []byte("fake-image-data")
@@ -119,7 +125,7 @@ func TestUploadAvatar_UniqueUUIDName(t *testing.T) {
 	mockRepo.On("SaveFile", mock.Anything, mock.Anything).
 		Return(domain.Files{Id: 1}, nil).Once()
 
-	mockRepo.On("UpdateUserAvatar", mock.Anything, userID, int64(1)).
+	mockUsers.On("UpdateAvatar", mock.Anything, userID, int64(1)).
 		Return(nil).Once()
 
 	fileID, err := svc.UploadAvatar(ctx, userID, reader, size, contentType, ext)
@@ -132,4 +138,5 @@ func TestUploadAvatar_UniqueUUIDName(t *testing.T) {
 
 	mockStorage.AssertExpectations(t)
 	mockRepo.AssertExpectations(t)
+	mockUsers.AssertExpectations(t)
 }

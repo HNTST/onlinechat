@@ -48,13 +48,12 @@ type ChatRepository interface {
 
 	EditMessage(
 		ctx context.Context,
-		messageID int64,
+		chatID, messageID, userID int64,
 		text string,
 	) error
 	SoftDeleteMessage(
 		ctx context.Context,
-		chatID int64,
-		messageID int64,
+		chatID, messageID, userID int64,
 	) error
 	MarkMessagesAsRead(
 		ctx context.Context,

@@ -94,6 +94,20 @@ func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (InsertU
 	return i, err
 }
 
+const updateUserAvatarByID = `-- name: UpdateUserAvatarByID :exec
+UPDATE users SET avatar_id = $1 WHERE id = $2
+`
+
+type UpdateUserAvatarByIDParams struct {
+	AvatarID pgtype.Int8 `json:"avatar_id"`
+	ID       int64       `json:"id"`
+}
+
+func (q *Queries) UpdateUserAvatarByID(ctx context.Context, arg UpdateUserAvatarByIDParams) error {
+	_, err := q.db.Exec(ctx, updateUserAvatarByID, arg.AvatarID, arg.ID)
+	return err
+}
+
 const updateUserLastSeen = `-- name: UpdateUserLastSeen :exec
 UPDATE users SET last_seen_at = $1 WHERE id = $2
 `

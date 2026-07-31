@@ -13,7 +13,6 @@ import (
 )
 
 const sessionTokenBytes = 32
-const sessionTTL = 24 * time.Hour
 
 func generateSessionToken() (string, error) {
 	b := make([]byte, sessionTokenBytes)
@@ -24,12 +23,13 @@ func generateSessionToken() (string, error) {
 }
 
 func (s *AuthService) Login(ctx context.Context, username, password string) (string, domain.User, error) {
-	userID, err := s.usersRepo.GetUserID(ctx, username)
+	userID, err := s.usersService.GetUserID(ctx, username)
 	if err != nil {
 		return "", domain.User{}, fmt.Errorf("login: %w", core_errors.ErrUnauthorized)
 	}
 
-	user, err := s.usersRepo.GetUser(ctx, userID)
+	uid := int(userID)
+	user, err := s.usersService.GetUser(ctx, &uid)
 	if err != nil {
 		return "", domain.User{}, fmt.Errorf("login: %w", core_errors.ErrUnauthorized)
 	}
@@ -43,7 +43,7 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (str
 		return "", domain.User{}, fmt.Errorf("login: %w", err)
 	}
 
-	expiresAt := time.Now().UTC().Add(sessionTTL)
+	expiresAt := time.Now().UTC().Add(domain.SessionTTL)
 
 	session, err := s.authRepo.CreateSession(ctx, user.Id, token, expiresAt)
 	if err != nil {
@@ -55,17 +55,8 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (str
 
 func (s *AuthService) Register(ctx context.Context, username, password string) (string, domain.User, error) {
 	user := domain.NewUserUninitialized(username, password)
-	if err := user.Validate(); err != nil {
-		return "", domain.User{}, fmt.Errorf("register: %w", core_errors.ErrInvalidArgument)
-	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return "", domain.User{}, fmt.Errorf("register: %w", err)
-	}
-	user.Password = string(hashedPassword)
-
-	savedUser, err := s.usersRepo.SaveUser(ctx, user)
+	savedUser, err := s.usersService.SaveUser(ctx, user)
 	if err != nil {
 		return "", domain.User{}, fmt.Errorf("register: %w", err)
 	}
@@ -75,7 +66,7 @@ func (s *AuthService) Register(ctx context.Context, username, password string) (
 		return "", domain.User{}, fmt.Errorf("register: %w", err)
 	}
 
-	expiresAt := time.Now().UTC().Add(sessionTTL)
+	expiresAt := time.Now().UTC().Add(domain.SessionTTL)
 
 	session, err := s.authRepo.CreateSession(ctx, savedUser.Id, token, expiresAt)
 	if err != nil {

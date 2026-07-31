@@ -3,6 +3,7 @@ package chat_transport_http
 import (
 	core_errors "discord/internal/core/errors"
 	core_logger "discord/internal/core/logger"
+	core_http_middleware "discord/internal/core/transport/middleware"
 	core_http_request "discord/internal/core/transport/request"
 	core_http_response "discord/internal/core/transport/response"
 	"net/http"
@@ -10,7 +11,6 @@ import (
 
 type SaveChatRequest struct {
 	ChatName   string `json:"chat_name" validate:"required"`
-	Author     int64  `json:"author" validate:"required"`
 	TargetUser int64  `json:"target_user" validate:"required"`
 	IsGroup    bool   `json:"is_group"`
 }
@@ -21,13 +21,14 @@ type SaveChatResponse struct {
 // SaveChat creates a new chat
 //
 //	@Summary		Создание чата
-//	@Description	Создание нового чата с двумя участниками
+//	@Description	Создание нового чата с двумя участниками. Автор чата определяется по сессии (не передаётся в теле запроса).
 //	@Tags			v2 / Чаты
 //	@Accept			json
 //	@Produce		json
 //	@Param			request	body		SaveChatRequest	true	"Данные чата"
 //	@Success		201		{object}	SaveChatResponse
 //	@Failure		400		{object}	object{}
+//	@Failure		401		{object}	object{}
 //	@Router			/api/v2/chat [post]
 func (h *ChatHttpHandler) SaveChat(
 	w http.ResponseWriter,
@@ -51,10 +52,15 @@ func (h *ChatHttpHandler) SaveChat(
 		)
 		return
 	}
+	userID, ok := ctx.Value(core_http_middleware.UserIDKey).(int64)
+	if !ok {
+		responseHandler.ErrorResponse(core_errors.ErrUnauthorized, "не авторизован")
+		return
+	}
 	chatID, err := h.chatService.SaveChat(
 		ctx,
 		request.ChatName,
-		request.Author,
+		userID,
 		request.TargetUser,
 		request.IsGroup,
 	)

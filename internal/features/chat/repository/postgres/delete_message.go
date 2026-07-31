@@ -2,18 +2,16 @@ package chats_postgres_repository
 
 import (
 	"context"
-	core_errors "discord/internal/core/errors"
-	"discord/internal/db"
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-func (r *ChatRepository) SoftDeleteMessage(ctx context.Context, chatID, messageID int64) error {
+func (r *ChatRepository) SoftDeleteMessage(ctx context.Context, chatID, messageID, userID int64) error {
 	query := `
 		UPDATE messages
 		SET is_deleted = true, message = ''
-		WHERE id = $1 AND chat_id = $2 AND is_deleted = false
+		WHERE id = $1 AND chat_id = $2 AND sender_id = $3 AND is_deleted = false
 	`
 
 	var (
@@ -23,11 +21,11 @@ func (r *ChatRepository) SoftDeleteMessage(ctx context.Context, chatID, messageI
 
 	tx := r.pool.GetTx(ctx)
 	if tx != nil {
-		tag, err = tx.Exec(ctx, query, messageID, chatID)
+		tag, err = tx.Exec(ctx, query, messageID, chatID, userID)
 	} else {
 		ctx, cancel := context.WithTimeout(ctx, r.pool.OpTimeout())
 		defer cancel()
-		tag, err = r.pool.Exec(ctx, query, messageID, chatID)
+		tag, err = r.pool.Exec(ctx, query, messageID, chatID, userID)
 	}
 
 	if err != nil {
@@ -35,24 +33,7 @@ func (r *ChatRepository) SoftDeleteMessage(ctx context.Context, chatID, messageI
 	}
 
 	if tag.RowsAffected() == 0 {
-		q := r.pool.GetQueries(ctx)
-
-		inChat, checkErr := q.CheckMessageExistsInChat(ctx, db.CheckMessageExistsInChatParams{
-			ID:     messageID,
-			ChatID: chatID,
-		})
-		if checkErr != nil {
-			return fmt.Errorf("message not found: %w", core_errors.ErrMessageNotFound)
-		}
-		if inChat {
-			return fmt.Errorf("message already deleted: %w", core_errors.ErrMessageNotFound)
-		}
-
-		exists, existErr := q.CheckMessageExists(ctx, messageID)
-		if existErr != nil || !exists {
-			return fmt.Errorf("message not found: %w", core_errors.ErrMessageNotFound)
-		}
-		return fmt.Errorf("message belongs to another chat: %w", core_errors.ErrUnauthorized)
+		return fmt.Errorf("soft delete message: %w", r.checkMessageAccess(ctx, messageID, chatID, userID))
 	}
 	return nil
 }

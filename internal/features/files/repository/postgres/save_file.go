@@ -5,8 +5,6 @@ import (
 	"discord/internal/core/domain"
 	"discord/internal/db"
 	"fmt"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 func (r *FileRepository) SaveFile(ctx context.Context, file domain.Files) (domain.Files, error) {
@@ -29,17 +27,4 @@ func (r *FileRepository) SaveFile(ctx context.Context, file domain.Files) (domai
 		TypeFile:         result.TypeFile,
 		SizeFile:         result.SizeFile,
 	}, nil
-}
-
-func (r *FileRepository) UpdateUserAvatar(ctx context.Context, userID, fileID int64) error {
-	q := r.pool.GetQueries(ctx)
-
-	err := q.UpdateUserAvatarByID(ctx, db.UpdateUserAvatarByIDParams{
-		AvatarID: pgtype.Int8{Int64: fileID, Valid: true},
-		ID:       userID,
-	})
-	if err != nil {
-		return fmt.Errorf("update user avatar: %w", err)
-	}
-	return nil
 }

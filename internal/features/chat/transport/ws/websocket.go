@@ -98,6 +98,7 @@ func (sc *safeConn) isAllowedChat(chatID int64) bool {
 }
 
 type ChatWSHandler struct {
+	log          *core_logger.Logger
 	chatService  ChatService
 	userService  UserService
 	clients      map[int64]map[*safeConn]struct{}
@@ -106,8 +107,9 @@ type ChatWSHandler struct {
 	statusMu     sync.RWMutex
 }
 
-func NewChatWSHandler(ctx context.Context, chatService ChatService, userService UserService) *ChatWSHandler {
+func NewChatWSHandler(ctx context.Context, logger *core_logger.Logger, chatService ChatService, userService UserService) *ChatWSHandler {
 	h := &ChatWSHandler{
+		log:          logger,
 		chatService:  chatService,
 		userService:  userService,
 		clients:      make(map[int64]map[*safeConn]struct{}),
@@ -168,8 +170,6 @@ func (h *ChatWSHandler) cleanupStaleStatuses(ctx context.Context) {
 	ticker := time.NewTicker(time.Hour)
 	defer ticker.Stop()
 
-	log := core_logger.NewLogger()
-
 	for {
 		select {
 		case <-ctx.Done():
@@ -180,7 +180,7 @@ func (h *ChatWSHandler) cleanupStaleStatuses(ctx context.Context) {
 			for userID, s := range h.userStatuses {
 				if s.Status == "offline" && now.Sub(s.LastSeen) > statusCleanup {
 					if err := h.userService.SaveLastSeen(context.Background(), userID, s.LastSeen); err != nil {
-						log.Warn("failed to save last seen on cleanup", "user_id", userID, "error", err)
+						h.log.Warn("failed to save last seen on cleanup", "user_id", userID, "error", err)
 					}
 					delete(h.userStatuses, userID)
 				}
@@ -310,9 +310,9 @@ func (h *ChatWSHandler) notifyPartners(ctx context.Context, userID int64, status
 //	@Summary		WebSocket-соединение (v2)
 //	@Description	Обновление HTTP до WebSocket для обмена сообщениями и отслеживания статуса онлайн/оффлайн/away в реальном времени.
 //	@Description	
-//	@Description	**Входящее сообщение (от клиента):**
+//	@Description	**Входящее сообщение (от клиента, sender_id берётся из сессии):**
 //	@Description	```json
-//	@Description	{ "message": "text", "chat_id": 1, "sender_id": 123 }
+//	@Description	{ "message": "text", "chat_id": 1 }
 //	@Description	```
 //	@Description	
 //	@Description	**Исходящие сообщения (от сервера):**
@@ -411,17 +411,13 @@ func (h *ChatWSHandler) HandleConnections(w http.ResponseWriter, r *http.Request
 }
 
 type wsInput struct {
-	Message  string `json:"message"`
-	ChatID   int64  `json:"chat_id"`
-	SenderID int64  `json:"sender_id"`
+	Message string `json:"message"`
+	ChatID  int64  `json:"chat_id"`
 }
 
 func (h *ChatWSHandler) processMessage(ctx context.Context, data []byte, actualSenderID int64, sc *safeConn) {
 	var input wsInput
 	if err := json.Unmarshal(data, &input); err != nil {
-		return
-	}
-	if input.SenderID != actualSenderID {
 		return
 	}
 	if !sc.isAllowedChat(input.ChatID) {
@@ -433,7 +429,7 @@ func (h *ChatWSHandler) processMessage(ctx context.Context, data []byte, actualS
 
 	m := domain.Messages{
 		Message:  input.Message,
-		SenderId: input.SenderID,
+		SenderId: actualSenderID,
 		ChatId:   input.ChatID,
 		Sent_at:  time.Now(),
 	}

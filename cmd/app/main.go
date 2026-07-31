@@ -65,7 +65,7 @@ func main() {
 
 	// --- V2 Auth module ---
 	authRepo := auth_postgres_repository.NewAuthRepository(pgPool)
-	authService := auth_service.NewAuthService(authRepo, usersRepo)
+	authService := auth_service.NewAuthService(authRepo, usersService)
 	authTransport := auth_transport_http.NewAuthHTTPHandler(authService)
 	authRoutes := authTransport.Routes()
 
@@ -74,7 +74,7 @@ func main() {
 	chatService := chat_service.NewChatService(chatRepo)
 	chatTransport := chat_transport_http.NewChatHttpHandler(chatService)
 	chatRoutes := chatTransport.Routes()
-	chatWSHandler := chat_transport_ws.NewChatWSHandler(ctx, chatService, usersService)
+	chatWSHandler := chat_transport_ws.NewChatWSHandler(ctx, logger, chatService, usersService)
 
 	// --- V2 File module ---
 	filePostgresRepo := files_postgres_repository.NewFileRepository(pgPool)
@@ -85,7 +85,7 @@ func main() {
 		return
 	}
 	logger.Info("Успешное подключение к MinIO")
-	fileService := files_service.NewFileService(filePostgresRepo, fileStorage)
+	fileService := files_service.NewFileService(filePostgresRepo, fileStorage, usersService)
 	fileTransport := files_transport_http.NewFileHTTPHandler(fileService)
 	fileRoutes := fileTransport.Routes()
 
